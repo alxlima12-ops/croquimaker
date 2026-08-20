@@ -1,0 +1,7 @@
+# artefato gerado por build.py — recriável, mas costuma-se versionar para distribuir.
+# Se preferir NÃO versionar o arquivo único, descomente:
+# croqui-canionismo.html
+
+.DS_Store
+*.log
+node_modules/

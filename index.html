@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montador de croquis · canionismo</title>
+<meta name="description" content="Editor web para montar croquis de canionismo com a simbologia padrão da CBC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<style id="estilo-impressao"></style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <span class="sigla">CRQ</span>
+    <span class="marca-texto">
+      <strong>Montador de croquis</strong>
+      <small>Simbologia CBC · canionismo</small>
+    </span>
+  </div>
+
+  <div class="acoes">
+    <button id="bt-novo" type="button">Nova folha</button>
+    <button id="bt-exemplo" type="button">Carregar exemplo</button>
+    <button id="bt-abrir" type="button">Abrir projeto</button>
+    <input id="arquivo" type="file" accept="application/json,.json" hidden>
+    <span class="divisor" aria-hidden="true"></span>
+    <button id="bt-json" type="button">Salvar projeto</button>
+    <button id="bt-svg" type="button">Exportar SVG</button>
+    <button id="bt-pdf" type="button">Exportar PDF</button>
+    <button id="bt-png" type="button" class="destaque">Exportar PNG</button>
+  </div>
+</header>
+
+<main class="area">
+
+  <aside class="coluna coluna-esq">
+    <div class="cabeca-coluna">
+      <h2>Paleta</h2>
+      <input id="busca" type="search" placeholder="Buscar símbolo" aria-label="Buscar símbolo">
+    </div>
+    <div id="paleta" class="rolavel"></div>
+    <p class="rodape-coluna">Clique para inserir no centro da folha, ou arraste até o ponto exato.<br>
+      Simbologia CBC — arte e conteúdo de Carlos Zaith; adaptação de Sanner Moraes e Pedro Ferraz.</p>
+  </aside>
+
+  <section id="mesa">
+    <div class="barra-mesa">
+      <button id="bt-texto" type="button">Inserir texto</button>
+      <span class="divisor" aria-hidden="true"></span>
+      <button id="zoom-menos" type="button" aria-label="Diminuir zoom">−</button>
+      <span id="zoom-valor" class="mono">100%</span>
+      <button id="zoom-mais" type="button" aria-label="Aumentar zoom">+</button>
+      <button id="zoom-ajustar" type="button">Ajustar à tela</button>
+      <span class="dica">Arraste para mover · alça superior gira · canto inferior direito redimensiona · Delete apaga</span>
+    </div>
+
+    <div class="rolagem">
+      <div id="folha">
+        <svg id="croqui" viewBox="0 0 1123 794" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Folha do croqui em A4 paisagem">
+          <style>
+            /* vector-effect mantém a espessura do traço constante ao escalar o elemento (backlog item 4) */
+            .simbolo { stroke:#000; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+            .relevo  { stroke:#000; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+            .fill      { fill:#000; stroke:none; }
+            .tracejado { stroke-dasharray:8 7; }
+            .texto, .texto-item { fill:#000; stroke:none; font-family:Arial, Helvetica, sans-serif; }
+            .item .texto-item { pointer-events:auto; }
+            .item { cursor:move; }
+            .sel-caixa { fill:none; stroke:#12908d; stroke-width:1.2; stroke-dasharray:6 4; }
+            .alca { fill:#fff; stroke:#12908d; stroke-width:1.6; cursor:pointer; }
+            .alca-alvo { fill:transparent; stroke:none; pointer-events:all; cursor:pointer; }
+          </style>
+
+          <rect id="fundo" x="0" y="0" width="1123" height="794" fill="#ffffff"/>
+
+          <g id="grade" class="so-tela">
+            <defs>
+              <pattern id="malha" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M40 0 H0 V40" fill="none" stroke="#e9ecec" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="1123" height="794" fill="url(#malha)"/>
+            <rect x="28" y="28" width="1067" height="738" fill="none" stroke="#dfe4e4" stroke-width="1"/>
+          </g>
+
+          <g id="camada-calque" class="so-tela"></g>
+          <g id="camada-folha"></g>
+          <g id="camada-itens"></g>
+          <g id="camada-ui" class="so-tela"></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <aside class="coluna coluna-dir">
+    <div class="abas" role="tablist" aria-label="Painéis de edição">
+      <button class="aba" role="tab" data-painel="p-item" aria-selected="true" type="button">Item</button>
+      <button class="aba" role="tab" data-painel="p-folha" aria-selected="false" type="button">Folha</button>
+      <button class="aba" role="tab" data-painel="p-ficha" aria-selected="false" type="button">Ficha</button>
+      <button class="aba" role="tab" data-painel="p-risco" aria-selected="false" type="button">Risco</button>
+      <button class="aba" role="tab" data-painel="p-calque" aria-selected="false" type="button">Calque</button>
+    </div>
+
+    <div class="rolavel">
+      <div id="p-item" class="painel"><div id="inspetor"></div></div>
+
+      <div id="p-folha" class="painel" hidden>
+        <p class="explica">Título, autoria e observações que saem impressos na folha.</p>
+        <form id="form-folha" autocomplete="off"></form>
+      </div>
+
+      <div id="p-ficha" class="painel" hidden>
+        <p class="explica">Informações mínimas do padrão CBC. Campos em branco saem vazios na tabela.</p>
+        <form id="form-ficha" autocomplete="off"></form>
+      </div>
+
+      <div id="p-calque" class="painel" hidden>
+        <p class="explica">Coloque uma foto ou digitalização do croqui atrás da folha e desenhe por cima. O calque só aparece na tela: não entra no SVG, no PNG nem no PDF.</p>
+        <button id="bt-calque" type="button" class="largo">Escolher imagem</button>
+        <input id="arquivo-calque" type="file" accept="image/*" hidden>
+        <div id="calque-controles"></div>
+      </div>
+
+      <div id="p-risco" class="painel" hidden>
+        <p class="explica">Todo item marcado com <i class="ast">*</i> precisa constar na legenda. Esta lista acompanha a folha sozinha.</p>
+        <div id="legenda-painel"></div>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<script src="js/simbologia.js"></script>
+<script src="js/relevos.js"></script>
+<script src="js/ficha.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

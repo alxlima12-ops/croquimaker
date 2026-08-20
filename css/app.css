@@ -1,0 +1,478 @@
+/* ============================================================
+   app.css — interface do montador de croquis
+
+   Direção: prancheta de campo. A folha é papel branco de verdade
+   (o croqui é impresso em preto e branco), e toda a interface ao
+   redor é grafite frio para não competir com ela. Duas cores de
+   sinal, e só duas: vermelho CBC para itens de risco, verde-água
+   para o que está selecionado. Nunca se confundem.
+   ============================================================ */
+
+:root {
+  --grafite-900: #12181B;
+  --grafite-800: #192125;
+  --grafite-700: #232E33;
+  --grafite-600: #313F45;
+  --linha:       #2C383D;
+  --tinta:       #E6EDEE;
+  --tinta-fraca: #8A9AA0;
+  --papel:       #FFFFFF;
+  --risco:       #D6212B;
+  --agua:        #16A8A2;
+
+  --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --corpo:   'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --r: 3px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--corpo);
+  font-size: 14px;
+  color: var(--tinta);
+  background: var(--grafite-900);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--agua);
+  outline-offset: 2px;
+}
+
+/* ---------------- Topo ---------------- */
+
+.topo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  height: 58px;
+  background: var(--grafite-800);
+  border-bottom: 1px solid var(--linha);
+}
+
+.marca { display: flex; align-items: center; gap: 10px; }
+
+.sigla {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .12em;
+  color: var(--grafite-900);
+  background: var(--tinta);
+  padding: 5px 7px 4px;
+  border-radius: var(--r);
+}
+
+.marca-texto { display: flex; flex-direction: column; line-height: 1.15; }
+.marca-texto strong {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.marca-texto small {
+  font-size: 11px;
+  color: var(--tinta-fraca);
+  letter-spacing: .04em;
+}
+
+.acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.topo button,
+.barra-mesa button {
+  background: transparent;
+  border: 1px solid var(--linha);
+  color: var(--tinta);
+  padding: 7px 11px;
+  border-radius: var(--r);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s ease, border-color .12s ease;
+}
+.topo button:hover,
+.barra-mesa button:hover { background: var(--grafite-700); border-color: var(--grafite-600); }
+
+.topo button.destaque {
+  background: var(--tinta);
+  color: var(--grafite-900);
+  border-color: var(--tinta);
+  font-weight: 600;
+}
+.topo button.destaque:hover { background: #fff; }
+
+.divisor {
+  width: 1px;
+  height: 22px;
+  background: var(--linha);
+  margin: 0 4px;
+}
+
+/* ---------------- Estrutura ---------------- */
+
+.area {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr) 322px;
+  min-height: 0;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--grafite-800);
+}
+.coluna-esq { border-right: 1px solid var(--linha); }
+.coluna-dir { border-left: 1px solid var(--linha); }
+
+.rolavel { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+
+.cabeca-coluna { padding: 14px 14px 10px; border-bottom: 1px solid var(--linha); }
+.cabeca-coluna h2 {
+  margin: 0 0 9px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+
+#busca {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 8px 10px;
+}
+#busca::placeholder { color: #5F6E74; }
+
+.rodape-coluna {
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--tinta-fraca);
+  border-top: 1px solid var(--linha);
+}
+
+/* ---------------- Paleta ---------------- */
+
+.grupo { padding: 12px 12px 4px; }
+.grupo h3 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+  border-bottom: 1px solid var(--linha);
+  padding-bottom: 5px;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.grade-relevo { grid-template-columns: repeat(2, 1fr); }
+
+.ficha-simbolo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  background: var(--grafite-700);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  cursor: grab;
+  color: var(--tinta);
+  text-align: center;
+}
+.ficha-simbolo:hover { border-color: var(--agua); background: var(--grafite-600); }
+.ficha-simbolo:active { cursor: grabbing; }
+
+.ficha-simbolo svg { width: 100%; height: 42px; display: block; }
+.grade-relevo .ficha-simbolo svg { height: 74px; }
+
+.ficha-simbolo span {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--tinta-fraca);
+  hyphens: auto;
+}
+
+.ficha-simbolo.risco { border-color: rgba(214, 33, 43, .45); }
+.ficha-simbolo .ast {
+  position: absolute;
+  top: 3px; right: 5px;
+  color: var(--risco);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* traço dos ícones dentro da paleta segue a cor do texto */
+.ficha-simbolo .simbolo { stroke: currentColor; fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ficha-simbolo .relevo  { stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.ficha-simbolo .fill      { fill: currentColor; stroke: none; }
+.ficha-simbolo .tracejado { stroke-dasharray: 8 7; }
+.ficha-simbolo .texto     { fill: currentColor; stroke: none; }
+
+/* ---------------- Mesa ---------------- */
+
+#mesa {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background:
+    linear-gradient(var(--linha) 1px, transparent 1px) 0 0 / 34px 34px,
+    linear-gradient(90deg, var(--linha) 1px, transparent 1px) 0 0 / 34px 34px,
+    var(--grafite-900);
+}
+
+.barra-mesa {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--grafite-800);
+  border-bottom: 1px solid var(--linha);
+}
+
+#zoom-valor {
+  font-family: var(--mono);
+  font-size: 12px;
+  min-width: 46px;
+  text-align: center;
+  color: var(--tinta-fraca);
+}
+
+.barra-mesa .dica {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--tinta-fraca);
+}
+
+.rolagem {
+  flex: 1 1 auto;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 26px;
+}
+
+#folha {
+  width: 800px;
+  flex: 0 0 auto;
+  background: var(--papel);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+}
+#folha svg { display: block; width: 100%; height: auto; touch-action: none; }
+
+/* ---------------- Painel direito ---------------- */
+
+.abas {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--linha);
+}
+.aba {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 4px;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.aba:hover { color: var(--tinta); }
+.aba[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--agua); }
+
+.painel { padding: 14px; }
+
+.explica {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+}
+
+.vazio {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--tinta-fraca);
+}
+
+.alvo {
+  margin: 0 0 14px;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.campo { display: block; margin-bottom: 13px; }
+.campo > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.campo > span b { color: var(--tinta); font-family: var(--mono); font-weight: 500; }
+
+.campo input[type="text"],
+.campo input:not([type]),
+.campo textarea {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+  resize: vertical;
+}
+.campo input:focus, .campo textarea:focus { border-color: var(--agua); outline: none; }
+
+.campo select {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+}
+.campo input[type="number"] {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+}
+
+.dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dupla[hidden] { display: none; }
+
+.caixa {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 13px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tinta-fraca);
+  cursor: pointer;
+}
+.caixa input { accent-color: var(--agua); margin-top: 1px; }
+
+.regua { border: 0; border-top: 1px solid var(--linha); margin: 16px 0; }
+
+.campo input[type="range"] {
+  width: 100%;
+  accent-color: var(--agua);
+}
+
+.botoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.botoes button {
+  flex: 1 1 auto;
+  background: var(--grafite-700);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.botoes button:hover { background: var(--grafite-600); }
+.botoes button.perigo { color: #FF8D93; border-color: rgba(214, 33, 43, .5); }
+.botoes button.perigo:hover { background: rgba(214, 33, 43, .16); }
+
+/* ---------------- Legenda de risco ---------------- */
+
+#legenda-painel ul { margin: 0; padding: 0; list-style: none; }
+#legenda-painel li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 13px;
+  animation: entra .22s ease-out;
+}
+.ast { color: var(--risco); font-style: normal; font-weight: 700; }
+
+@keyframes entra { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+/* ---------------- Responsivo ---------------- */
+
+@media (max-width: 1180px) {
+  .area { grid-template-columns: 250px minmax(0, 1fr) 280px; }
+  .barra-mesa .dica { display: none; }
+}
+
+@media (max-width: 940px) {
+  body { overflow: auto; }
+  .area { display: block; }
+  .coluna, #mesa { height: auto; }
+  .coluna-esq, .coluna-dir { border: 0; border-top: 1px solid var(--linha); }
+  .rolavel { max-height: 60vh; }
+  .rolagem { padding: 14px; }
+  .topo { height: auto; flex-wrap: wrap; padding: 10px 12px; gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------------- Calque ---------------- */
+
+#camada-calque { pointer-events: none; }
+
+.largo {
+  width: 100%;
+  background: var(--grafite-700);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 9px 10px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.largo:hover { background: var(--grafite-600); }
+
+/* ---------------- Impressão / PDF ---------------- */
+
+/* o @page e a largura da folha saem de #estilo-impressao, que acompanha o formato */
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  .topo, .coluna, .barra-mesa { display: none !important; }
+  .area { display: block; }
+  #mesa { background: #fff; }
+  .rolagem { display: block; padding: 0; overflow: visible; }
+  #folha { box-shadow: none; }
+  .so-tela { display: none !important; }
+}

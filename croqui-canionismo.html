@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montador de croquis · canionismo</title>
+<meta name="description" content="Editor web para montar croquis de canionismo com a simbologia padrão da CBC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   app.css — interface do montador de croquis
+
+   Direção: prancheta de campo. A folha é papel branco de verdade
+   (o croqui é impresso em preto e branco), e toda a interface ao
+   redor é grafite frio para não competir com ela. Duas cores de
+   sinal, e só duas: vermelho CBC para itens de risco, verde-água
+   para o que está selecionado. Nunca se confundem.
+   ============================================================ */
+
+:root {
+  --grafite-900: #12181B;
+  --grafite-800: #192125;
+  --grafite-700: #232E33;
+  --grafite-600: #313F45;
+  --linha:       #2C383D;
+  --tinta:       #E6EDEE;
+  --tinta-fraca: #8A9AA0;
+  --papel:       #FFFFFF;
+  --risco:       #D6212B;
+  --agua:        #16A8A2;
+
+  --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --corpo:   'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --r: 3px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--corpo);
+  font-size: 14px;
+  color: var(--tinta);
+  background: var(--grafite-900);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--agua);
+  outline-offset: 2px;
+}
+
+/* ---------------- Topo ---------------- */
+
+.topo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+  height: 58px;
+  background: var(--grafite-800);
+  border-bottom: 1px solid var(--linha);
+}
+
+.marca { display: flex; align-items: center; gap: 10px; }
+
+.sigla {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .12em;
+  color: var(--grafite-900);
+  background: var(--tinta);
+  padding: 5px 7px 4px;
+  border-radius: var(--r);
+}
+
+.marca-texto { display: flex; flex-direction: column; line-height: 1.15; }
+.marca-texto strong {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.marca-texto small {
+  font-size: 11px;
+  color: var(--tinta-fraca);
+  letter-spacing: .04em;
+}
+
+.acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.topo button,
+.barra-mesa button {
+  background: transparent;
+  border: 1px solid var(--linha);
+  color: var(--tinta);
+  padding: 7px 11px;
+  border-radius: var(--r);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s ease, border-color .12s ease;
+}
+.topo button:hover,
+.barra-mesa button:hover { background: var(--grafite-700); border-color: var(--grafite-600); }
+
+.topo button.destaque {
+  background: var(--tinta);
+  color: var(--grafite-900);
+  border-color: var(--tinta);
+  font-weight: 600;
+}
+.topo button.destaque:hover { background: #fff; }
+
+.divisor {
+  width: 1px;
+  height: 22px;
+  background: var(--linha);
+  margin: 0 4px;
+}
+
+/* ---------------- Estrutura ---------------- */
+
+.area {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 296px minmax(0, 1fr) 322px;
+  min-height: 0;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--grafite-800);
+}
+.coluna-esq { border-right: 1px solid var(--linha); }
+.coluna-dir { border-left: 1px solid var(--linha); }
+
+.rolavel { overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+
+.cabeca-coluna { padding: 14px 14px 10px; border-bottom: 1px solid var(--linha); }
+.cabeca-coluna h2 {
+  margin: 0 0 9px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+
+#busca {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 8px 10px;
+}
+#busca::placeholder { color: #5F6E74; }
+
+.rodape-coluna {
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--tinta-fraca);
+  border-top: 1px solid var(--linha);
+}
+
+/* ---------------- Paleta ---------------- */
+
+.grupo { padding: 12px 12px 4px; }
+.grupo h3 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+  border-bottom: 1px solid var(--linha);
+  padding-bottom: 5px;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.grade-relevo { grid-template-columns: repeat(2, 1fr); }
+
+.ficha-simbolo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  background: var(--grafite-700);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  cursor: grab;
+  color: var(--tinta);
+  text-align: center;
+}
+.ficha-simbolo:hover { border-color: var(--agua); background: var(--grafite-600); }
+.ficha-simbolo:active { cursor: grabbing; }
+
+.ficha-simbolo svg { width: 100%; height: 42px; display: block; }
+.grade-relevo .ficha-simbolo svg { height: 74px; }
+
+.ficha-simbolo span {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--tinta-fraca);
+  hyphens: auto;
+}
+
+.ficha-simbolo.risco { border-color: rgba(214, 33, 43, .45); }
+.ficha-simbolo .ast {
+  position: absolute;
+  top: 3px; right: 5px;
+  color: var(--risco);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* traço dos ícones dentro da paleta segue a cor do texto */
+.ficha-simbolo .simbolo { stroke: currentColor; fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ficha-simbolo .relevo  { stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.ficha-simbolo .fill      { fill: currentColor; stroke: none; }
+.ficha-simbolo .tracejado { stroke-dasharray: 8 7; }
+.ficha-simbolo .texto     { fill: currentColor; stroke: none; }
+
+/* ---------------- Mesa ---------------- */
+
+#mesa {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background:
+    linear-gradient(var(--linha) 1px, transparent 1px) 0 0 / 34px 34px,
+    linear-gradient(90deg, var(--linha) 1px, transparent 1px) 0 0 / 34px 34px,
+    var(--grafite-900);
+}
+
+.barra-mesa {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--grafite-800);
+  border-bottom: 1px solid var(--linha);
+}
+
+#zoom-valor {
+  font-family: var(--mono);
+  font-size: 12px;
+  min-width: 46px;
+  text-align: center;
+  color: var(--tinta-fraca);
+}
+
+.barra-mesa .dica {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--tinta-fraca);
+}
+
+.rolagem {
+  flex: 1 1 auto;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 26px;
+}
+
+#folha {
+  width: 800px;
+  flex: 0 0 auto;
+  background: var(--papel);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+}
+#folha svg { display: block; width: 100%; height: auto; touch-action: none; }
+
+/* ---------------- Painel direito ---------------- */
+
+.abas {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--linha);
+}
+.aba {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 4px;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.aba:hover { color: var(--tinta); }
+.aba[aria-selected="true"] { color: var(--tinta); border-bottom-color: var(--agua); }
+
+.painel { padding: 14px; }
+
+.explica {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+}
+
+.vazio {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--tinta-fraca);
+}
+
+.alvo {
+  margin: 0 0 14px;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.campo { display: block; margin-bottom: 13px; }
+.campo > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--tinta-fraca);
+}
+.campo > span b { color: var(--tinta); font-family: var(--mono); font-weight: 500; }
+
+.campo input[type="text"],
+.campo input:not([type]),
+.campo textarea {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+  resize: vertical;
+}
+.campo input:focus, .campo textarea:focus { border-color: var(--agua); outline: none; }
+
+.campo select {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+}
+.campo input[type="number"] {
+  width: 100%;
+  background: var(--grafite-900);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 7px 9px;
+}
+
+.dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dupla[hidden] { display: none; }
+
+.caixa {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 13px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tinta-fraca);
+  cursor: pointer;
+}
+.caixa input { accent-color: var(--agua); margin-top: 1px; }
+
+.regua { border: 0; border-top: 1px solid var(--linha); margin: 16px 0; }
+
+.campo input[type="range"] {
+  width: 100%;
+  accent-color: var(--agua);
+}
+
+.botoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.botoes button {
+  flex: 1 1 auto;
+  background: var(--grafite-700);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.botoes button:hover { background: var(--grafite-600); }
+.botoes button.perigo { color: #FF8D93; border-color: rgba(214, 33, 43, .5); }
+.botoes button.perigo:hover { background: rgba(214, 33, 43, .16); }
+
+/* ---------------- Legenda de risco ---------------- */
+
+#legenda-painel ul { margin: 0; padding: 0; list-style: none; }
+#legenda-painel li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 13px;
+  animation: entra .22s ease-out;
+}
+.ast { color: var(--risco); font-style: normal; font-weight: 700; }
+
+@keyframes entra { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+/* ---------------- Responsivo ---------------- */
+
+@media (max-width: 1180px) {
+  .area { grid-template-columns: 250px minmax(0, 1fr) 280px; }
+  .barra-mesa .dica { display: none; }
+}
+
+@media (max-width: 940px) {
+  body { overflow: auto; }
+  .area { display: block; }
+  .coluna, #mesa { height: auto; }
+  .coluna-esq, .coluna-dir { border: 0; border-top: 1px solid var(--linha); }
+  .rolavel { max-height: 60vh; }
+  .rolagem { padding: 14px; }
+  .topo { height: auto; flex-wrap: wrap; padding: 10px 12px; gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------------- Calque ---------------- */
+
+#camada-calque { pointer-events: none; }
+
+.largo {
+  width: 100%;
+  background: var(--grafite-700);
+  border: 1px solid var(--linha);
+  border-radius: var(--r);
+  padding: 9px 10px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.largo:hover { background: var(--grafite-600); }
+
+/* ---------------- Impressão / PDF ---------------- */
+
+/* o @page e a largura da folha saem de #estilo-impressao, que acompanha o formato */
+@media print {
+  html, body { height: auto; overflow: visible; background: #fff; }
+  .topo, .coluna, .barra-mesa { display: none !important; }
+  .area { display: block; }
+  #mesa { background: #fff; }
+  .rolagem { display: block; padding: 0; overflow: visible; }
+  #folha { box-shadow: none; }
+  .so-tela { display: none !important; }
+}
+
+</style>
+<style id="estilo-impressao"></style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <span class="sigla">CRQ</span>
+    <span class="marca-texto">
+      <strong>Montador de croquis</strong>
+      <small>Simbologia CBC · canionismo</small>
+    </span>
+  </div>
+
+  <div class="acoes">
+    <button id="bt-novo" type="button">Nova folha</button>
+    <button id="bt-exemplo" type="button">Carregar exemplo</button>
+    <button id="bt-abrir" type="button">Abrir projeto</button>
+    <input id="arquivo" type="file" accept="application/json,.json" hidden>
+    <span class="divisor" aria-hidden="true"></span>
+    <button id="bt-json" type="button">Salvar projeto</button>
+    <button id="bt-svg" type="button">Exportar SVG</button>
+    <button id="bt-pdf" type="button">Exportar PDF</button>
+    <button id="bt-png" type="button" class="destaque">Exportar PNG</button>
+  </div>
+</header>
+
+<main class="area">
+
+  <aside class="coluna coluna-esq">
+    <div class="cabeca-coluna">
+      <h2>Paleta</h2>
+      <input id="busca" type="search" placeholder="Buscar símbolo" aria-label="Buscar símbolo">
+    </div>
+    <div id="paleta" class="rolavel"></div>
+    <p class="rodape-coluna">Clique para inserir no centro da folha, ou arraste até o ponto exato.<br>
+      Simbologia CBC — arte e conteúdo de Carlos Zaith; adaptação de Sanner Moraes e Pedro Ferraz.</p>
+  </aside>
+
+  <section id="mesa">
+    <div class="barra-mesa">
+      <button id="bt-texto" type="button">Inserir texto</button>
+      <span class="divisor" aria-hidden="true"></span>
+      <button id="zoom-menos" type="button" aria-label="Diminuir zoom">−</button>
+      <span id="zoom-valor" class="mono">100%</span>
+      <button id="zoom-mais" type="button" aria-label="Aumentar zoom">+</button>
+      <button id="zoom-ajustar" type="button">Ajustar à tela</button>
+      <span class="dica">Arraste para mover · alça superior gira · canto inferior direito redimensiona · Delete apaga</span>
+    </div>
+
+    <div class="rolagem">
+      <div id="folha">
+        <svg id="croqui" viewBox="0 0 1123 794" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Folha do croqui em A4 paisagem">
+          <style>
+            /* vector-effect mantém a espessura do traço constante ao escalar o elemento (backlog item 4) */
+            .simbolo { stroke:#000; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+            .relevo  { stroke:#000; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+            .fill      { fill:#000; stroke:none; }
+            .tracejado { stroke-dasharray:8 7; }
+            .texto, .texto-item { fill:#000; stroke:none; font-family:Arial, Helvetica, sans-serif; }
+            .item .texto-item { pointer-events:auto; }
+            .item { cursor:move; }
+            .sel-caixa { fill:none; stroke:#12908d; stroke-width:1.2; stroke-dasharray:6 4; }
+            .alca { fill:#fff; stroke:#12908d; stroke-width:1.6; cursor:pointer; }
+            .alca-alvo { fill:transparent; stroke:none; pointer-events:all; cursor:pointer; }
+          </style>
+
+          <rect id="fundo" x="0" y="0" width="1123" height="794" fill="#ffffff"/>
+
+          <g id="grade" class="so-tela">
+            <defs>
+              <pattern id="malha" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M40 0 H0 V40" fill="none" stroke="#e9ecec" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="1123" height="794" fill="url(#malha)"/>
+            <rect x="28" y="28" width="1067" height="738" fill="none" stroke="#dfe4e4" stroke-width="1"/>
+          </g>
+
+          <g id="camada-calque" class="so-tela"></g>
+          <g id="camada-folha"></g>
+          <g id="camada-itens"></g>
+          <g id="camada-ui" class="so-tela"></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <aside class="coluna coluna-dir">
+    <div class="abas" role="tablist" aria-label="Painéis de edição">
+      <button class="aba" role="tab" data-painel="p-item" aria-selected="true" type="button">Item</button>
+      <button class="aba" role="tab" data-painel="p-folha" aria-selected="false" type="button">Folha</button>
+      <button class="aba" role="tab" data-painel="p-ficha" aria-selected="false" type="button">Ficha</button>
+      <button class="aba" role="tab" data-painel="p-risco" aria-selected="false" type="button">Risco</button>
+      <button class="aba" role="tab" data-painel="p-calque" aria-selected="false" type="button">Calque</button>
+    </div>
+
+    <div class="rolavel">
+      <div id="p-item" class="painel"><div id="inspetor"></div></div>
+
+      <div id="p-folha" class="painel" hidden>
+        <p class="explica">Título, autoria e observações que saem impressos na folha.</p>
+        <form id="form-folha" autocomplete="off"></form>
+      </div>
+
+      <div id="p-ficha" class="painel" hidden>
+        <p class="explica">Informações mínimas do padrão CBC. Campos em branco saem vazios na tabela.</p>
+        <form id="form-ficha" autocomplete="off"></form>
+      </div>
+
+      <div id="p-calque" class="painel" hidden>
+        <p class="explica">Coloque uma foto ou digitalização do croqui atrás da folha e desenhe por cima. O calque só aparece na tela: não entra no SVG, no PNG nem no PDF.</p>
+        <button id="bt-calque" type="button" class="largo">Escolher imagem</button>
+        <input id="arquivo-calque" type="file" accept="image/*" hidden>
+        <div id="calque-controles"></div>
+      </div>
+
+      <div id="p-risco" class="painel" hidden>
+        <p class="explica">Todo item marcado com <i class="ast">*</i> precisa constar na legenda. Esta lista acompanha a folha sozinha.</p>
+        <div id="legenda-painel"></div>
+      </div>
+    </div>
+  </aside>
+
+</main>
+<script>
+/* ============================================================
+   simbologia.js
+   Catálogo de símbolos do padrão de croquis de canionismo (CBC).
+   Base: "Simbologia para montagem de croqui" — arte e conteúdo de
+   Carlos Zaith, adaptação de Sanner Moraes e Pedro Ferraz.
+
+   Cada símbolo é desenhado em uma caixa de 100x100 unidades.
+   O traço usa currentColor, então o símbolo herda a cor do item.
+   `{{label}}` é substituído pelo rótulo do item na hora de desenhar.
+
+   ATENÇÃO: os traçados abaixo são reconstruções vetoriais das
+   figuras do PDF, não os arquivos originais. Antes de publicar,
+   confira símbolo a símbolo com a prancha oficial.
+   ============================================================ */
+
+window.CATEGORIAS = [
+  { id: 'progressao', nome: 'Progressão' },
+  { id: 'manobras', nome: 'Manobras' },
+  { id: 'ancoragem', nome: 'Ancoragens e referências' },
+  { id: 'hidrologia', nome: 'Hidrologia' },
+  { id: 'terreno', nome: 'Terreno' },
+  { id: 'alerta', nome: 'Alertas' },
+  { id: 'logistica', nome: 'Logística' }
+];
+
+window.SIMBOLOS = [
+  /* ---------------- Progressão ---------------- */
+  // BACKLOG-3 (item 3): alongamento anisotrópico. Estes símbolos NÃO são um `svg`
+  // fixo — têm `alongavel:true` e `render(comprimento)`, que devolve o traçado com
+  // o topo/dobra parado, a haste reta esticada por `comprimento` (unidades da
+  // caixa 100x100) e a seta de tamanho fixo empurrada para baixo. É o alongamento
+  // do croqui: some com o `esc` (que continua dando zoom uniforme). Ver README.
+  {
+    id: 'rapel-seco', nome: 'Rapel seco', cat: 'progressao', alongavel: true,
+    render(c) { c = c || 0;
+      return `<path d="M50 10 V${64 + c}"/><path d="M50 ${90 + c} L38 ${62 + c} H62 Z" class="fill"/>`;
+    }
+  },
+  {
+    id: 'rapel-molhado', nome: 'Rapel molhado', cat: 'progressao', alongavel: true,
+    render(c) { c = c || 0;
+      return `<path d="M50 8 q13 8 0 16 q-13 8 0 16 q13 8 0 16 V${62 + c}"/><path d="M50 ${90 + c} L38 ${62 + c} H62 Z" class="fill"/>`;
+    }
+  },
+  {
+    id: 'rapel-guiado', nome: 'Rapel guiado', cat: 'progressao',
+    svg: `<path d="M16 26 L70 63"/><path d="M22 44 L40 14"/><path d="M88 76 L64 72 L75 55 Z" class="fill"/>`
+  },
+  {
+    id: 'desescalada', nome: 'Desescalada', cat: 'progressao', alongavel: true,
+    render(c) { c = c || 0;
+      return `<path d="M18 14 H42 V42 H66 V${64 + c}"/><path d="M66 ${90 + c} L55 ${64 + c} H77 Z" class="fill"/>`;
+    }
+  },
+  {
+    id: 'escalada', nome: 'Escalada', cat: 'progressao', alongavel: true,
+    render(c) { c = c || 0;
+      return `<path d="M66 ${86 + c} V58 H42 V30 H18 V36"/><path d="M18 8 L7 34 H29 Z" class="fill"/>`;
+    }
+  },
+  {
+    id: 'salto', nome: 'Salto', cat: 'progressao', alongavel: true,
+    render(c) { c = c || 0;
+      return `<path d="M26 74 V44 a16 16 0 0 1 32 0 V${58 + c}"/><path d="M58 ${86 + c} L47 ${60 + c} H69 Z" class="fill"/>`;
+    }
+  },
+  {
+    id: 'toboga', nome: 'Tobogã', cat: 'progressao',
+    svg: `<path d="M10 60 q22 -30 40 -12 q18 18 40 -14"/>`
+  },
+  {
+    id: 'oposicao', nome: 'Oposição', cat: 'progressao', risco: true,
+    svg: `<path d="M26 50 H74"/><path d="M8 50 L30 40 V60 Z" class="fill"/><path d="M92 50 L70 40 V60 Z" class="fill"/><path d="M50 22 V78"/>`
+  },
+  {
+    id: 'remontar-corda', nome: 'Remontar p/ corda', cat: 'progressao', risco: true,
+    svg: `<path d="M50 90 V32"/><path d="M50 8 L39 34 H61 Z" class="fill"/><circle cx="50" cy="60" r="6" class="fill"/>`
+  },
+  {
+    id: 'percurso-nao-descrito', nome: 'Percurso não descrito', cat: 'progressao',
+    svg: `<path d="M16 78 L52 20"/><path d="M44 80 L80 22"/><path d="M22 56 L40 62"/><path d="M52 58 L70 64"/>`
+  },
+
+  /* ---------------- Manobras ---------------- */
+  {
+    id: 'corrimao', nome: 'Corrimão', cat: 'manobras',
+    svg: `<path d="M14 34 q36 42 72 0"/><circle cx="14" cy="34" r="6" class="fill"/><circle cx="86" cy="34" r="6" class="fill"/>`
+  },
+  {
+    id: 'fracionamento', nome: 'Fracionamento', cat: 'manobras',
+    svg: `<path d="M50 10 V32"/><circle cx="50" cy="40" r="8"/><path d="M50 48 V64"/><path d="M50 90 L39 64 H61 Z" class="fill"/>`
+  },
+  {
+    id: 'desvio', nome: 'Desvio', cat: 'manobras',
+    svg: `<path d="M22 12 L50 46"/><path d="M78 18 L50 46"/><circle cx="78" cy="18" r="6" class="fill"/><path d="M50 46 V64"/><path d="M50 90 L39 64 H61 Z" class="fill"/>`
+  },
+  {
+    id: 'tirolesa', nome: 'Tirolesa', cat: 'manobras', risco: true,
+    svg: `<path d="M12 28 H88"/><path d="M12 28 L54 68 L88 30"/><circle cx="34" cy="49" r="6" class="fill"/>`
+  },
+  {
+    id: 'travessia-corda', nome: 'Travessia c/ corda', cat: 'manobras', risco: true,
+    svg: `<circle cx="16" cy="26" r="6" class="fill"/><path d="M16 26 q30 46 54 26" class="tracejado"/><path d="M88 40 L64 44 L72 62 Z" class="fill"/>`
+  },
+  {
+    id: 'pendulo', nome: 'Pêndulo', cat: 'manobras', risco: true,
+    svg: `<circle cx="30" cy="12" r="6" class="fill"/><path d="M30 12 V58"/><path d="M30 88 L19 62 H41 Z" class="fill"/><path d="M32 60 q30 22 44 -12" class="tracejado"/>`
+  },
+
+  /* ---------------- Ancoragens e referências ---------------- */
+  {
+    id: 'md', nome: 'Margem direita (MD)', cat: 'ancoragem',
+    svg: `<text x="50" y="66" text-anchor="middle" font-size="40" class="texto">MD</text>`
+  },
+  {
+    id: 'me', nome: 'Margem esquerda (ME)', cat: 'ancoragem',
+    svg: `<text x="50" y="66" text-anchor="middle" font-size="40" class="texto">ME</text>`
+  },
+  {
+    id: 'aa', nome: 'Ancoragem em árvore (AA)', cat: 'ancoragem',
+    svg: `<text x="50" y="66" text-anchor="middle" font-size="40" class="texto">AA</text>`
+  },
+  {
+    id: 'ar', nome: 'Ancoragem em rocha (AR)', cat: 'ancoragem',
+    svg: `<text x="50" y="66" text-anchor="middle" font-size="40" class="texto">AR</text>`
+  },
+  {
+    id: 'pitons', nome: 'Pitons', cat: 'ancoragem',
+    svg: `<path d="M10 68 L38 26 L44 48 Z" class="fill"/><path d="M48 68 L76 26 L82 48 Z" class="fill"/>`
+  },
+  {
+    id: 'ancoragens-fixas', nome: 'Ancoragens fixas', cat: 'ancoragem',
+    svg: `<path d="M14 34 L42 62 M42 34 L14 62"/><path d="M58 34 L86 62 M86 34 L58 62"/>`
+  },
+  {
+    id: 'passo-chave', nome: 'Passo chave', cat: 'ancoragem',
+    svg: `<circle cx="26" cy="50" r="14"/><circle cx="26" cy="50" r="4.5" class="fill"/><path d="M40 50 H86"/><path d="M70 50 V68"/><path d="M86 50 V68"/>`
+  },
+  {
+    id: 'rapel-id', nome: 'Identificação do rapel', cat: 'ancoragem', rotulo: 'R1',
+    svg: `<circle cx="50" cy="50" r="34"/><text x="50" y="64" text-anchor="middle" font-size="34" class="texto">{{label}}</text>`
+  },
+
+  /* ---------------- Hidrologia ---------------- */
+  {
+    id: 'afluente', nome: 'Afluente', cat: 'hidrologia',
+    svg: `<path d="M8 72 q24 -6 38 -24 q14 -18 46 -22"/><path d="M46 48 q14 12 40 16"/>`
+  },
+  {
+    id: 'ressurgencia', nome: 'Ressurgência', cat: 'hidrologia',
+    svg: `<path d="M26 36 a14 14 0 1 0 8 26 q22 8 38 -2"/><path d="M92 54 L68 50 L72 68 Z" class="fill"/>`
+  },
+  {
+    id: 'sumidouro', nome: 'Sumidouro', cat: 'hidrologia', risco: true,
+    svg: `<path d="M4 26 q20 12 34 8"/><path d="M54 44 L34 34 L30 50 Z" class="fill"/><path d="M90 70 a15 15 0 1 1 -15 -15"/><path d="M82 70 a7 7 0 1 0 -7 -7"/>`
+  },
+  {
+    id: 'tramo', nome: 'Tramo (trecho inundado)', cat: 'hidrologia',
+    svg: `<path d="M10 40 q18 -18 34 -2 q16 16 46 -8"/><path d="M10 62 q18 -18 34 -2 q16 16 46 -8"/>`
+  },
+  {
+    id: 'sifao', nome: 'Sifão', cat: 'hidrologia', risco: true,
+    svg: `<path d="M26 34 a19 19 0 1 1 28 20 V66"/><circle cx="54" cy="84" r="6" class="fill"/>`
+  },
+  {
+    id: 'refluxo', nome: 'Refluxo', cat: 'hidrologia', risco: true,
+    svg: `<path d="M6 30 Q24 30 40.0 52.0"/><path d="M40.0 52.0 L41.2 45.9 L44.0 40.4 L48.0 36.0 L52.9 32.7 L58.4 30.9 L64.0 30.6 L69.4 31.8 L74.2 34.2 L78.2 37.8 L81.0 42.2 L82.5 47.0 L82.8 52.0 L81.7 56.7 L79.5 60.9 L76.3 64.3 L72.5 66.7 L68.3 68.0 L64.0 68.1 L59.9 67.2 L56.4 65.2 L53.5 62.5 L51.6 59.2 L50.5 55.6 L50.5 52.0 L51.4 48.6 L53.1 45.7 L55.4 43.4 L58.1 41.8 L61.1 41.1 L64.0 41.1 L66.7 41.9 L69.0 43.3 L70.8 45.2 L71.9 47.4 L72.4 49.8 L72.2 52.0 L71.5 54.0 L70.4 55.7 L68.9 56.9 L67.2 57.6 L65.6 57.9 L64.0 57.6 L62.7 57.0 L61.6 56.1 L61.0 55.0 L60.6 53.9 L60.7 52.9 L61.0 52.0"/>`
+  },
+  {
+    id: 'contra-corrente', nome: 'Contra corrente', cat: 'hidrologia', risco: true,
+    svg: `<path d="M18 32 q28 -14 50 2"/><path d="M84 42 L62 30 L58 46 Z" class="fill"/><path d="M82 68 q-28 14 -50 -2"/><path d="M16 58 L38 70 L42 54 Z" class="fill"/>`
+  },
+  {
+    id: 'redemoinho', nome: 'Redemoinho', cat: 'hidrologia', risco: true,
+    svg: `<path d="M30.0 30.0 L31.0 24.9 L33.3 20.4 L36.6 16.6 L40.7 13.9 L45.3 12.4 L50.0 12.1 L54.5 13.1 L58.6 15.1 L61.9 18.1 L64.3 21.8 L65.6 25.8 L65.8 30.0 L64.9 34.0 L63.0 37.5 L60.4 40.4 L57.2 42.4 L53.6 43.5 L50.0 43.6 L46.6 42.8 L43.5 41.2 L41.1 38.9 L39.4 36.1 L38.5 33.1 L38.5 30.0 L39.2 27.1 L40.7 24.6 L42.6 22.6 L45.0 21.3 L47.5 20.6 L50.0 20.6 L52.3 21.3 L54.3 22.5 L55.9 24.1 L56.9 26.0 L57.3 28.0 L57.2 30.0 L56.7 31.8 L55.7 33.3 L54.4 34.4 L52.9 35.1 L51.4 35.3 L50.0 35.1 L48.8 34.6 L47.8 33.8 L47.1 32.9 L46.8 31.9 L46.8 30.9 L47.0 30.0"/><path d="M50 54 V66"/><path d="M50 92 L39 66 H61 Z" class="fill"/>`
+  },
+  {
+    id: 'marmita', nome: 'Marmita', cat: 'hidrologia', risco: true,
+    svg: `<path d="M8 40 q10 -11 20 -2 q10 9 21 0 q10 -9 21 2 q-31 36 -62 0 Z" class="fill"/>`
+  },
+  {
+    id: 'drosagem', nome: 'Drosagem', cat: 'hidrologia', risco: true,
+    svg: `<path d="M4 38 L24 46 L4 54 Z" class="fill"/><path d="M16.0 46.0 L17.5 41.4 L20.7 37.2 L25.4 33.7 L31.3 30.9 L38.1 29.1 L45.2 28.2 L52.4 28.4 L59.1 29.5 L65.1 31.5 L70.0 34.2 L73.7 37.5 L75.9 41.1 L76.6 44.8 L75.7 48.4 L73.6 51.7 L70.2 54.6 L65.8 56.9 L60.8 58.5 L55.4 59.3 L50.0 59.3 L44.8 58.6 L40.2 57.3 L36.4 55.4 L33.5 53.1 L31.7 50.5 L31.0 47.8 L31.4 45.1 L32.8 42.7 L35.0 40.6 L38.0 38.9 L41.4 37.8 L45.1 37.1 L48.8 37.0 L52.3 37.4 L55.4 38.3 L58.0 39.5 L59.9 41.0 L61.1 42.7 L61.6 44.4 L61.3 46.0 L60.5 47.5 L59.1 48.7 L57.3 49.7 L55.3 50.3 L53.3 50.6 L51.2 50.6 L49.4 50.3 L47.9 49.8"/>`
+  },
+  {
+    id: 'encorbatado', nome: 'Encorbatado', cat: 'hidrologia', risco: true,
+    svg: `<path d="M8 18 L40 41"/><path d="M56 52 L37 48 L46 35 Z" class="fill"/><path d="M8 82 L40 59"/><path d="M56 48 L46 65 L37 52 Z" class="fill"/>`
+  },
+  {
+    id: 'poco', nome: 'Poço', cat: 'hidrologia',
+    svg: `<path d="M10 40 H90 a40 28 0 0 1 -80 0 Z" style="fill:#b8b8b8"/>`
+  },
+
+  /* ---------------- Terreno ---------------- */
+  {
+    id: 'caverna', nome: 'Caverna', cat: 'terreno',
+    svg: `<path d="M14 80 H34 q0 -16 -12 -28 q-8 -8 -8 -18 q0 -20 36 -20 q36 0 36 20 q0 10 -8 18 q-12 12 -12 28 h20"/>`
+  },
+  {
+    id: 'arco', nome: 'Arco', cat: 'terreno',
+    svg: `<path d="M14 34 H86"/><path d="M28 78 a22 26 0 0 1 44 0"/>`
+  },
+  {
+    id: 'estreitos', nome: 'Estreitos', cat: 'terreno',
+    svg: `<path d="M40 14 V86"/><path d="M60 14 V86"/><path d="M34 50 L14 41 V59 Z" class="fill"/><path d="M66 50 L86 41 V59 Z" class="fill"/>`
+  },
+  {
+    id: 'escuros', nome: 'Escuros', cat: 'terreno',
+    svg: `<path d="M38 16 h24 v20 h20 v24 h-20 v20 h-24 v-20 h-20 v-24 h20 z" class="fill"/>`
+  },
+  {
+    id: 'blocos', nome: 'Blocos', cat: 'terreno',
+    svg: `<path d="M8 64 q2 -18 20 -16 q8 -14 26 -6 q20 -8 26 10 q12 8 4 14 Z"/><path d="M28 48 q10 8 26 6"/>`
+  },
+  {
+    id: 'caos', nome: 'Caos', cat: 'terreno',
+    svg: `<path d="M14 24 L52 76 M52 24 L14 76"/><path d="M48 24 L86 76 M86 24 L48 76"/><path d="M8 50 H92"/>`
+  },
+  {
+    id: 'arvores', nome: 'Árvores', cat: 'terreno',
+    svg: `<path d="M32 50 q-16 -6 -8 -20 q-6 -16 12 -18 q8 -12 24 -4 q20 -4 20 14 q12 10 -2 22 q-6 12 -20 8 q-14 8 -26 -2 Z"/><path d="M50 44 V88"/><path d="M50 62 L34 50 M50 70 L66 56"/>`
+  },
+  {
+    id: 'barragem', nome: 'Barragem', cat: 'terreno',
+    svg: `<path d="M20 28 L88 18"/><path d="M16 44 L84 34"/><path d="M12 60 L80 50"/><path d="M8 76 L76 66"/>`
+  },
+
+  /* ---------------- Alertas ---------------- */
+  {
+    id: 'atencao', nome: 'Atenção', cat: 'alerta',
+    svg: `<path d="M50 12 L92 84 H8 Z"/><path d="M50 40 V62"/><circle cx="50" cy="72" r="4.5" class="fill"/>`
+  },
+  {
+    id: 'abrasao-forte', nome: 'Abrasão forte', cat: 'alerta',
+    svg: `<path d="M32 12 L66 62 L54 72 Z" class="fill"/><path d="M54 72 L44 88"/>`
+  },
+  {
+    id: 'zona-perigo', nome: 'Zona de PERIGO', cat: 'alerta',
+    svg: `<path d="M50 12 q-30 0 -30 26 q0 12 10 18 v8 h40 v-8 q10 -6 10 -18 q0 -26 -30 -26 Z"/><circle cx="38" cy="42" r="6" class="fill"/><circle cx="62" cy="42" r="6" class="fill"/><path d="M50 56 v8"/><path d="M34 72 V88 M42 72 V90 M50 72 V88 M58 72 V90 M66 72 V88"/>`
+  },
+
+  /* ---------------- Logística ---------------- */
+  {
+    id: 'estacionamento', nome: 'Estacionamento para veículos', cat: 'logistica',
+    svg: `<circle cx="50" cy="50" r="34" stroke-width="8"/><text x="50" y="65" text-anchor="middle" font-size="40" font-weight="700" class="texto">E</text>`
+  },
+  {
+    id: 'acampamento', nome: 'Acampamento, bivaque', cat: 'logistica',
+    svg: `<path d="M50 20 L86 76 H14 Z"/><path d="M26 60 H74"/>`
+  },
+  {
+    id: 'via-de-escape', nome: 'Via de escape', cat: 'logistica',
+    svg: `<path d="M10 86 L72 30"/><path d="M92 16 L66 22 L78 38 Z" class="fill"/>`
+  },
+  {
+    id: 'trilha', nome: 'Trilha', cat: 'logistica',
+    svg: `<path d="M10 84 L90 20" class="tracejado"/>`
+  },
+  {
+    id: 'inicio-canyon', nome: 'Início do canyon', cat: 'logistica',
+    svg: `<path d="M18 12 V56 M18 12 H62 M18 34 H52 M18 56 H62"/><path d="M40 56 V66"/><path d="M40 92 L29 66 H51 Z" class="fill"/>`
+  },
+  {
+    id: 'final-canyon', nome: 'Final do canyon', cat: 'logistica',
+    svg: `<path d="M60 46 H30"/><path d="M8 46 L32 36 V56 Z" class="fill"/><text x="80" y="62" text-anchor="middle" font-size="40" class="texto">S</text>`
+  },
+  {
+    id: 'continua-pagina', nome: 'Continua em outra página', cat: 'logistica',
+    svg: `<path d="M30 80 L56 20"/><path d="M52 80 L78 20"/>`
+  }
+];
+
+/** Traçado interno de um símbolo. Símbolos alongáveis têm `render(comprimento)`;
+    os demais têm `svg` fixo. `comprimento` em unidades da caixa (padrão 0). */
+window.svgSimbolo = (s, comprimento) => s && s.render ? s.render(comprimento || 0) : (s ? s.svg : '');
+
+/** Índice por id, para lookup rápido. */
+window.SIMBOLO_POR_ID = Object.fromEntries(window.SIMBOLOS.map(s => [s.id, s]));
+
+/** Itens de risco: obrigatoriamente descritos na legenda do croqui. */
+window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
+
+/* ============================================================
+   relevos.js
+   Traçados de perfil usados no corpo do croqui: quedas (rampada,
+   vertical, negativo, desescalada), caminhada, caminhada em
+   blocos e poço.
+
+   São gerados por função, com ruído determinístico (seed), para
+   que a mesma queda desenhe sempre igual e o croqui não mude
+   sozinho ao recarregar.
+   ============================================================ */
+
+(function () {
+  /** PRNG determinístico (mulberry32). */
+  function rng(seed) {
+    let t = seed >>> 0;
+    return function () {
+      t += 0x6D2B79F5;
+      let x = t;
+      x = Math.imul(x ^ (x >>> 15), x | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /** Altura em pixels de cada faixa de queda. */
+  const FAIXAS = [
+    { id: '10-20', nome: '10–20 m', h: 90 },
+    { id: '20-40', nome: '20–40 m', h: 150 },
+    { id: '40-60', nome: '40–60 m', h: 215 },
+    { id: '60-80', nome: '60–80 m', h: 290 }
+  ];
+
+  /** Comprimento em pixels de cada faixa de caminhada. */
+  const DISTANCIAS = [
+    { id: '50', nome: '50 m', w: 70 },
+    { id: '100', nome: '100 m', w: 120 },
+    { id: '200', nome: '200 m', w: 180 },
+    { id: '300', nome: '+300 m', w: 250 }
+  ];
+
+  /** Larguras de poço. */
+  const POCOS = [
+    { id: '5', nome: '5 m', w: 34 },
+    { id: '10', nome: '10 m', w: 60 },
+    { id: '20', nome: '20 m', w: 92 },
+    { id: '30', nome: '+30 m', w: 128 }
+  ];
+
+  /** Perfil de queda: devolve o atributo `d` de um path. */
+  function queda(tipo, h, seed) {
+    const r = rng(seed);
+    const n = Math.max(4, Math.round(h / 26));
+    const pts = [];
+
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const y = t * h;
+      let x;
+      if (tipo === 'rampada') {
+        x = t * h * 0.52 + (r() - 0.5) * 7;
+      } else if (tipo === 'vertical') {
+        x = (r() - 0.5) * 9;
+      } else if (tipo === 'negativo') {
+        // barriga para fora e retorno: perfil negativo
+        x = -Math.sin(t * Math.PI) * (h * 0.24) + (r() - 0.5) * 6;
+      } else { // desescalada — quebras marcadas
+        x = t * h * 0.34 + (i % 2 ? 9 : -9) + (r() - 0.5) * 5;
+      }
+      pts.push([x, y]);
+    }
+
+    if (tipo === 'desescalada') {
+      return 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L');
+    }
+    // curva suave (Catmull-Rom simplificado em quadráticas)
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      const cx = (p0[0] + p1[0]) / 2, cy = (p0[1] + p1[1]) / 2;
+      d += ` Q${p0[0].toFixed(1)} ${p0[1].toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)}`;
+    }
+    d += ` L${pts[pts.length - 1][0].toFixed(1)} ${pts[pts.length - 1][1].toFixed(1)}`;
+    return d;
+  }
+
+  /** Linha de caminhada: quase horizontal, levemente descendente. */
+  function caminhada(w, seed) {
+    const r = rng(seed);
+    const n = Math.max(4, Math.round(w / 22));
+    let d = 'M0 0';
+    for (let i = 1; i <= n; i++) {
+      const x = (i / n) * w;
+      const y = (i / n) * 10 + (r() - 0.5) * 6;
+      d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  /** Caminhada em blocos: a linha + pedras espalhadas sobre ela. */
+  function caminhadaBlocos(w, seed) {
+    const r = rng(seed + 99);
+    const linha = caminhada(w, seed);
+    let pedras = '';
+    const qtd = Math.max(3, Math.round(w / 18));
+    for (let i = 0; i < qtd; i++) {
+      const x = (i / qtd) * w + r() * 8;
+      const y = (i / qtd) * 10 - 3 - r() * 4;
+      const rx = 5 + r() * 6, ry = 3.5 + r() * 3;
+      pedras += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"/>`;
+    }
+    return { linha, pedras };
+  }
+
+  window.RELEVOS = {
+    FAIXAS, DISTANCIAS, POCOS,
+    queda, caminhada, caminhadaBlocos,
+
+    /** Monta o SVG interno de um item de relevo. */
+    desenhar(item) {
+      const seed = item.seed || 1;
+      if (item.ref.startsWith('queda:')) {
+        const [, tipo, faixaId] = item.ref.split(':');
+        const faixa = FAIXAS.find(f => f.id === faixaId) || FAIXAS[0];
+        return `<path d="${queda(tipo, faixa.h, seed)}"/>`;
+      }
+      if (item.ref.startsWith('caminhada-blocos:')) {
+        const dist = DISTANCIAS.find(f => f.id === item.ref.split(':')[1]) || DISTANCIAS[0];
+        const { linha, pedras } = caminhadaBlocos(dist.w, seed);
+        return `<path d="${linha}"/>${pedras}`;
+      }
+      if (item.ref.startsWith('caminhada:')) {
+        const dist = DISTANCIAS.find(f => f.id === item.ref.split(':')[1]) || DISTANCIAS[0];
+        return `<path d="${caminhada(dist.w, seed)}"/>`;
+      }
+      if (item.ref.startsWith('poco:')) {
+        const p = POCOS.find(f => f.id === item.ref.split(':')[1]) || POCOS[0];
+        const w = p.w, h = w * 0.34;
+        return `<path d="M0 0 H${w} a${w / 2} ${h} 0 0 1 -${w} 0 Z" style="fill:#b8b8b8"/>`;
+      }
+      return '';
+    },
+
+    /** Lista para a paleta. */
+    catalogo() {
+      const itens = [];
+      ['rampada', 'vertical', 'negativo', 'desescalada'].forEach(tipo => {
+        FAIXAS.forEach(f => itens.push({
+          ref: `queda:${tipo}:${f.id}`,
+          nome: `${tipo[0].toUpperCase() + tipo.slice(1)} ${f.nome}`,
+          grupo: 'Quedas', vb: '-70 -20 340 340'
+        }));
+      });
+      DISTANCIAS.forEach(d => itens.push({
+        ref: `caminhada:${d.id}`, nome: `Caminhada ${d.nome}`, grupo: 'Caminhada', vb: '-10 -22 270 70'
+      }));
+      DISTANCIAS.forEach(d => itens.push({
+        ref: `caminhada-blocos:${d.id}`, nome: `Blocos ${d.nome}`, grupo: 'Caminhada', vb: '-10 -22 270 70'
+      }));
+      POCOS.forEach(p => itens.push({
+        ref: `poco:${p.id}`, nome: `Poço ${p.nome}`, grupo: 'Poços', vb: '-8 -8 145 66'
+      }));
+      return itens;
+    }
+  };
+})();
+
+/* ============================================================
+   ficha.js
+   Elementos fixos da folha: título, ficha de informações mínimas,
+   nota do croquista, legenda de risco e créditos.
+
+   A ficha segue a lista de "Informações mínimas" do padrão CBC.
+   ============================================================ */
+
+(function () {
+  /* Mini ícones da ficha, desenhados em caixa 24x24. */
+  const MINI = {
+    pin: `<path d="M12 2 c-4 0-7 3-7 7 0 5 7 13 7 13 s7-8 7-13 c0-4-3-7-7-7z" fill="currentColor"/><circle cx="12" cy="9" r="2.6" fill="#fff"/>`,
+    carro: `<path d="M3 15 h18" stroke-width="1.6"/><path d="M5 15 q1-5 3-5 h8 q2 0 3 5" stroke-width="1.6" fill="none"/><circle cx="7.5" cy="17" r="1.8" fill="currentColor"/><circle cx="16.5" cy="17" r="1.8" fill="currentColor"/>`,
+    rio: `<path d="M2 17 q6-1 9-6 q3-5 11-6" stroke-width="1.8" fill="none"/><path d="M11 11 q4 4 11 5" stroke-width="1.8" fill="none"/>`,
+    regua: `<path d="M6 3 V21" stroke-width="1.6"/><path d="M3 3 H9 M3 21 H9" stroke-width="1.6"/><path d="M13 4 h8 v16 h-8z" stroke-width="1.4" fill="none"/><path d="M13 9 h4 M13 14 h4" stroke-width="1.4"/>`,
+    estacao: `<path d="M3 3 h8 v8 h-8z M13 3 h8 v8 h-8z M3 13 h8 v8 h-8z M13 13 h8 v8 h-8z" stroke-width="1.3" fill="none"/><path d="M5 7 h4 M15 5 l4 4 M5 17 l4-4 M15 17 h4" stroke-width="1.2"/>`,
+    corda: `<ellipse cx="12" cy="12" rx="9" ry="7" stroke-width="1.6" fill="none"/><ellipse cx="12" cy="12" rx="4" ry="3" stroke-width="1.4" fill="none"/>`,
+    rocha: `<path d="M3 19 L10 8 L16 19z" stroke-width="1.5" fill="none"/><circle cx="18" cy="9" r="1.4" fill="currentColor"/><circle cx="21" cy="13" r="1.1" fill="currentColor"/><circle cx="17" cy="14" r="1" fill="currentColor"/>`,
+    relogioDir: `<circle cx="8" cy="12" r="6" stroke-width="1.5" fill="none"/><path d="M8 8 V12 H11" stroke-width="1.4"/><path d="M16 12 h5" stroke-width="1.8"/><path d="M23 12 L18 9.5 V14.5z" fill="currentColor"/>`,
+    relogioEsq: `<circle cx="8" cy="12" r="6" stroke-width="1.5" fill="none"/><path d="M8 8 V12 H11" stroke-width="1.4"/><path d="M22 12 h-4" stroke-width="1.8"/><path d="M15 12 L20 9.5 V14.5z" fill="currentColor"/>`,
+    serraDir: `<path d="M1 16 L5 9 L9 16z M6 16 L10 11 L14 16z" fill="currentColor"/><path d="M16 12 h4" stroke-width="1.8"/><path d="M23 12 L18 9.5 V14.5z" fill="currentColor"/>`,
+    serraBaixo: `<path d="M1 16 L5 9 L9 16z M6 16 L10 11 L14 16z" fill="currentColor"/><path d="M16 9 l4 4" stroke-width="1.8"/><path d="M22 16 L16 14 L20 10z" fill="currentColor"/>`,
+    eCirc: `<circle cx="12" cy="12" r="8.5" stroke-width="1.8" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" stroke="none">E</text>`,
+    bussolaE: `<circle cx="9" cy="12" r="7" stroke-width="1.5" fill="none"/><path d="M6 15 L12 9" stroke-width="1.5"/><circle cx="12" cy="9" r="1.4" fill="currentColor"/><text x="19" y="16" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">E</text>`,
+    bussolaS: `<circle cx="9" cy="12" r="7" stroke-width="1.5" fill="none"/><path d="M6 15 L12 9" stroke-width="1.5"/><circle cx="12" cy="9" r="1.4" fill="currentColor"/><text x="19" y="16" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">S</text>`
+  };
+
+  /* Campos da ficha, em duas colunas, na ordem do padrão. */
+  const CAMPOS = [
+    { k: 'cidade', rotulo: 'Cidade/Estado', icone: 'pin', col: 0, exemplo: 'Baldim - MG' },
+    { k: 'afluente', rotulo: 'Afluente', icone: 'rio', col: 0, exemplo: 'Rio Claro' },
+    { k: 'estacao', rotulo: 'Estação preferencial', icone: 'estacao', col: 0, exemplo: 'Outono' },
+    { k: 'aproximacao', rotulo: 'Tempo e dist. de aproximação', icone: 'relogioDir', col: 0, exemplo: '1:30  2 km' },
+    { k: 'progressao', rotulo: 'Tempo e dist. de progressão', icone: 'serraDir', col: 0, exemplo: '5 h  1,7 km' },
+    { k: 'desnivel', rotulo: 'Desnível', icone: 'serraBaixo', col: 0, exemplo: '210 m' },
+    { k: 'retorno', rotulo: 'Tempo e dist. de retorno', icone: 'relogioEsq', col: 0, exemplo: '1 h  2 km' },
+    { k: 'carros', rotulo: 'Qtd. de carros na logística', icone: 'carro', col: 1, exemplo: 'x1' },
+    { k: 'maiorRapel', rotulo: 'Maior rapel', icone: 'regua', col: 1, exemplo: '60 m' },
+    { k: 'cordas', rotulo: 'Sugestão de cordas', icone: 'corda', col: 1, exemplo: '3x60' },
+    { k: 'rocha', rotulo: 'Tipo de rocha', icone: 'rocha', col: 1, exemplo: 'Arenito' },
+    { k: 'latEstacionamento', rotulo: 'Lat/long estacionamento', icone: 'eCirc', col: 1, exemplo: '-19.2801, -43.9612' },
+    { k: 'latEntrada', rotulo: 'Lat/long entrada', icone: 'bussolaE', col: 1, exemplo: '-19.2833, -43.9570' },
+    { k: 'latSaida', rotulo: 'Lat/long saída', icone: 'bussolaS', col: 1, exemplo: '-19.2902, -43.9488' }
+  ];
+
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  /** Tabela da ficha, ancorada no canto inferior esquerdo. */
+  function tabela(ficha, x, y) {
+    const linhaH = 24, colA = 178, colB = 208;
+    const esquerda = CAMPOS.filter(c => c.col === 0);
+    const direita = CAMPOS.filter(c => c.col === 1);
+    const n = Math.max(esquerda.length, direita.length);
+    let out = `<g class="ficha" transform="translate(${x},${y})">`;
+
+    for (let i = 0; i < n; i++) {
+      const yy = i * linhaH;
+      [esquerda[i], direita[i]].forEach((campo, ci) => {
+        if (!campo) return;
+        const cx = ci === 0 ? 0 : colA;
+        const cw = ci === 0 ? colA : colB;
+        const valor = ficha[campo.k] || '';
+        out += `<rect x="${cx}" y="${yy}" width="${cw}" height="${linhaH}" fill="none" stroke="#000" stroke-width="1"/>`;
+        out += `<g transform="translate(${cx + 5},${yy + 3})" stroke="#000" fill="none" stroke-linecap="round">${MINI[campo.icone] || ''}</g>`;
+        out += `<text x="${cx + 34}" y="${yy + 17}" font-size="13" fill="#000">${esc(valor)}</text>`;
+      });
+    }
+    out += `</g>`;
+    return out;
+  }
+
+  /** Legenda dos itens de risco presentes no croqui. */
+  function legenda(idsUsados, x, y) {
+    const usados = window.SIMBOLOS_RISCO.filter(s => idsUsados.includes(s.id));
+    if (!usados.length) return '';
+    let out = `<g class="legenda" transform="translate(${x},${y})">`;
+    out += `<text x="0" y="0" font-size="13" font-weight="700" fill="#000">Legenda — itens de risco</text>`;
+    usados.forEach((s, i) => {
+      const yy = 18 + i * 26;
+      out += `<g transform="translate(0,${yy - 13}) scale(0.24)" stroke="#000" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${window.svgSimbolo(s, 0).replace('{{label}}', 'R')}</g>`;
+      out += `<text x="34" y="${yy + 4}" font-size="13" fill="#000">${esc(s.nome)}</text>`;
+      out += `<text x="27" y="${yy + 4}" font-size="15" fill="#000">*</text>`;
+    });
+    out += `</g>`;
+    return out;
+  }
+
+  /** Camada fixa da folha: título, nota, ficha, créditos e legenda. */
+  function camadaFolha(estado, largura, altura, idsRisco) {
+    const m = estado.meta, f = estado.ficha;
+    let out = `<g class="folha" font-family="Arial, Helvetica, sans-serif">`;
+
+    out += `<text x="${largura / 2}" y="52" text-anchor="middle" font-size="34" fill="#000">${esc(m.titulo)}</text>`;
+
+    // a nota fica logo acima da tabela, seja qual for a altura da folha
+    const topoTabela = altura - 40 - 7 * 24;
+    if (m.nota) {
+      const linhas = String(m.nota).split('\n');
+      linhas.forEach((ln, i) => {
+        const y = topoTabela - 26 - (linhas.length - 1 - i) * 17;
+        out += `<text x="40" y="${y}" font-size="13" fill="#000">${esc(ln)}</text>`;
+      });
+    }
+
+    out += tabela(f, 40, topoTabela);
+
+    if (m.croquista) {
+      out += `<text x="${largura / 2}" y="${altura - 26}" text-anchor="middle" font-size="16" fill="#000">${esc(m.croquista)}</text>`;
+    }
+    if (m.abertura) {
+      out += `<text x="${largura - 40}" y="${altura - 190}" text-anchor="end" font-size="15" fill="#000">Abertura em ${esc(m.abertura)}</text>`;
+    }
+    (m.equipe || []).forEach((nome, i) => {
+      out += `<text x="${largura - 40}" y="${altura - 168 + i * 20}" text-anchor="end" font-size="15" fill="#000">${esc(nome)}</text>`;
+    });
+
+    out += legenda(idsRisco, largura - 260, altura - 90);
+    out += `</g>`;
+    return out;
+  }
+
+  window.FICHA = { CAMPOS, MINI, tabela, legenda, camadaFolha };
+})();
+
+/* ============================================================
+   editor.js
+   Núcleo do editor de croquis: estado, desenho, interação,
+   importação e exportação.
+
+   O croqui inteiro é um único SVG com viewBox fixo em A4
+   paisagem (1123 x 794 px a 96 dpi). Tudo que aparece na tela
+   mas não deve sair na exportação leva a classe .so-tela.
+   ============================================================ */
+
+(function () {
+  'use strict';
+
+  /* Formatos de folha, em milímetros. O tamanho em px vem daí a 96 dpi,
+     que é a unidade do viewBox — 297 mm dão exatamente 1123 px. */
+  const FORMATOS = [
+    { id: 'a4-paisagem', nome: 'A4 paisagem', l: 297, a: 210 },
+    { id: 'a4-retrato',  nome: 'A4 retrato',  l: 210, a: 297 },
+    { id: 'a3-paisagem', nome: 'A3 paisagem', l: 420, a: 297 },
+    { id: 'a3-retrato',  nome: 'A3 retrato',  l: 297, a: 420 },
+    { id: 'a2-paisagem', nome: 'A2 paisagem', l: 594, a: 420 },
+    { id: 'carta-paisagem', nome: 'Carta paisagem', l: 279, a: 216 },
+    { id: 'personalizado', nome: 'Personalizado', l: 297, a: 210 }
+  ];
+
+  const PX_POR_MM = 96 / 25.4;
+  const mmParaPx = mm => Math.round(mm * PX_POR_MM);
+
+  let LARGURA = 1123, ALTURA = 794;
+
+  /* ---------------- Estado ---------------- */
+
+  const vazio = () => ({
+    meta: {
+      titulo: 'Croqui sem título',
+      croquista: '',
+      abertura: '',
+      equipe: [],
+      nota: ''
+    },
+    ficha: {},
+    itens: [],
+    folha: { formato: 'a4-paisagem', larguraMm: 297, alturaMm: 210 },
+    calque: null   // só na sessão; não vai para o .json
+  });
+
+  let estado = vazio();
+  let sel = null;          // id do item selecionado
+  let zoom = 1;
+  let seq = 1;             // gerador de ids
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const esc = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const svg = $('#croqui');
+  const camItens = $('#camada-itens');
+  const camFolha = $('#camada-folha');
+  const camUI = $('#camada-ui');
+  const camCalque = $('#camada-calque');
+
+  /* ---------------- Desenho ---------------- */
+
+  // BACKLOG-5 (item 5): além de 'simbolo', 'relevo' e 'texto', adicionar um tipo
+  // 'imagem' aqui (logos de equipe, QR de Wikiloc, fotos). Renderiza como
+  // <image href={dataURL}>; entra no export, diferente do calque. Ver README.
+  /** Conteúdo interno de um item (sem o <g class="item"> externo). */
+  function mioloItem(it) {
+    if (it.tipo === 'simbolo') {
+      const s = window.SIMBOLO_POR_ID[it.ref];
+      if (!s) return '';
+      const corpo = window.svgSimbolo(s, it.comprimento).replace('{{label}}', esc(it.label || s.rotulo || ''));
+      return `<g class="simbolo" transform="translate(-50,-50)">${corpo}</g>`;
+    }
+    if (it.tipo === 'relevo') {
+      return `<g class="relevo">${window.RELEVOS.desenhar(it)}</g>`;
+    }
+    if (it.tipo === 'texto') {
+      const linhas = String(it.label || '').split('\n');
+      return `<text class="texto-item" font-size="${it.tamanho || 16}">` +
+        linhas.map((l, i) => `<tspan x="0" dy="${i === 0 ? 0 : 1.25}em">${esc(l)}</tspan>`).join('') +
+        `</text>`;
+    }
+    return '';
+  }
+
+  function markupItem(it) {
+    if (it.tipo === 'simbolo' && !window.SIMBOLO_POR_ID[it.ref]) return '';
+    const flip = it.flip ? -1 : 1;
+    const t = `translate(${it.x.toFixed(1)},${it.y.toFixed(1)}) rotate(${(it.rot || 0).toFixed(1)}) scale(${(it.esc * flip).toFixed(3)},${it.esc.toFixed(3)})`;
+    return `<g class="item" data-id="${it.id}" transform="${t}">${mioloItem(it)}</g>`;
+  }
+
+  function idsDeRisco() {
+    return estado.itens.filter(i => i.tipo === 'simbolo').map(i => i.ref);
+  }
+
+  function desenharCalque() {
+    const c = estado.calque;
+    camCalque.innerHTML = c
+      ? `<image href="${c.src}" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" opacity="${c.op}" preserveAspectRatio="xMidYMid meet"/>`
+      : '';
+  }
+
+  function desenhar() {
+    desenharCalque();
+    camFolha.innerHTML = window.FICHA.camadaFolha(estado, LARGURA, ALTURA, idsDeRisco());
+    camItens.innerHTML = estado.itens.map(markupItem).join('');
+    desenharSelecao();
+    atualizarLegendaPainel();
+  }
+
+  /* ---------------- Seleção e alças ---------------- */
+
+  function noSelecionado() {
+    return sel ? camItens.querySelector(`[data-id="${sel}"]`) : null;
+  }
+  function itemSel() {
+    return estado.itens.find(i => i.id === sel) || null;
+  }
+
+  function cantos(g) {
+    const bb = g.getBBox();
+    const m = g.transform.baseVal.consolidate().matrix;
+    const p = (x, y) => ({ x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f });
+    return [
+      p(bb.x, bb.y), p(bb.x + bb.width, bb.y),
+      p(bb.x + bb.width, bb.y + bb.height), p(bb.x, bb.y + bb.height)
+    ];
+  }
+
+  function desenharSelecao() {
+    const g = noSelecionado();
+    if (!g) { camUI.innerHTML = ''; return; }
+    const c = cantos(g);
+    const cx = (c[0].x + c[2].x) / 2, cy = (c[0].y + c[2].y) / 2;
+    const topo = { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 };
+    let vx = topo.x - cx, vy = topo.y - cy;
+    const len = Math.hypot(vx, vy) || 1;
+    const gir = { x: topo.x + (vx / len) * 34, y: topo.y + (vy / len) * 34 };
+
+    // cada alça tem um alvo invisível bem maior que o desenho, senão errar
+    // por três pixels seleciona o que estiver embaixo
+    camUI.innerHTML =
+      `<polygon class="sel-caixa" points="${c.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"/>` +
+      `<line class="sel-caixa" x1="${topo.x}" y1="${topo.y}" x2="${gir.x}" y2="${gir.y}"/>` +
+      `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="18"/>` +
+      `<rect class="alca-alvo" data-alca="escalar" x="${c[2].x - 18}" y="${c[2].y - 18}" width="36" height="36"/>` +
+      `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="7"/>` +
+      `<rect class="alca" data-alca="escalar" x="${c[2].x - 6}" y="${c[2].y - 6}" width="12" height="12"/>`;
+  }
+
+  function selecionar(id) {
+    const mudou = sel !== id;
+    sel = id;
+    desenharSelecao();
+    if (mudou) atualizarInspetor();
+  }
+
+  /* ---------------- Coordenadas ---------------- */
+
+  function paraSVG(evt) {
+    const p = svg.createSVGPoint();
+    p.x = evt.clientX; p.y = evt.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  /* ---------------- Adicionar itens ---------------- */
+
+  function novoId() { return 'i' + (seq++); }
+
+  function adicionar(tipo, ref, x, y, extras) {
+    const it = Object.assign({
+      id: novoId(), tipo, ref,
+      x: x != null ? x : LARGURA / 2,
+      y: y != null ? y : ALTURA / 2,
+      esc: tipo === 'relevo' ? 1 : 0.55,
+      rot: 0, flip: false,
+      seed: Math.floor(Math.random() * 1e6)
+    }, extras || {});
+
+    if (tipo === 'simbolo' && ref === 'rapel-id' && !it.label) {
+      const n = estado.itens.filter(i => i.ref === 'rapel-id').length + 1;
+      it.label = 'R' + n;
+    }
+    estado.itens.push(it);
+    desenhar();
+    selecionar(it.id);
+    return it;
+  }
+
+  /* ---------------- Arrastar, escalar, girar ---------------- */
+
+  let arraste = null;
+
+  svg.addEventListener('pointerdown', evt => {
+    // BACKLOG-1 (item 1): quando uma alça está pega, itens de texto ainda podem
+    // roubar o ponteiro. Avaliar uma trava global de arraste e/ou "bloquear"
+    // itens prontos para que não sejam selecionáveis por engano.
+    const alca = evt.target.closest('[data-alca]');
+    const g = evt.target.closest('.item');
+    const p = paraSVG(evt);
+
+    if (alca && sel) {
+      const it = itemSel();
+      const c = cantos(noSelecionado());
+      const cx = (c[0].x + c[2].x) / 2, cy = (c[0].y + c[2].y) / 2;
+      arraste = {
+        modo: alca.dataset.alca, it, cx, cy,
+        d0: Math.hypot(p.x - cx, p.y - cy),
+        e0: it.esc,
+        a0: Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI - (it.rot || 0)
+      };
+      svg.setPointerCapture(evt.pointerId);
+      return;
+    }
+
+    if (g) {
+      selecionar(g.dataset.id);
+      const it = itemSel();
+      arraste = { modo: 'mover', it, dx: p.x - it.x, dy: p.y - it.y };
+      svg.setPointerCapture(evt.pointerId);
+    } else {
+      selecionar(null);
+    }
+  });
+
+  svg.addEventListener('pointermove', evt => {
+    if (!arraste) return;
+    const p = paraSVG(evt);
+    const it = arraste.it;
+
+    if (arraste.modo === 'mover') {
+      it.x = Math.round(p.x - arraste.dx);
+      it.y = Math.round(p.y - arraste.dy);
+    } else if (arraste.modo === 'escalar') {
+      const d = Math.hypot(p.x - arraste.cx, p.y - arraste.cy);
+      it.esc = Math.min(6, Math.max(0.12, arraste.e0 * (d / (arraste.d0 || 1))));
+    } else if (arraste.modo === 'girar') {
+      let a = Math.atan2(p.y - arraste.cy, p.x - arraste.cx) * 180 / Math.PI - arraste.a0;
+      if (evt.shiftKey) a = Math.round(a / 15) * 15;
+      it.rot = Math.round(a);
+    }
+    redesenharItem(it);
+    desenharSelecao();
+    sincronizarInspetor(it);
+  });
+
+  /** Espelha no painel os valores mudados pelo arraste, sem remontá-lo. */
+  function sincronizarInspetor(it) {
+    const e = $('#in-esc'), r = $('#in-rot');
+    if (e) { e.value = Math.round(it.esc * 100); e.closest('.campo').querySelector('b').textContent = e.value + '%'; }
+    if (r) { r.value = it.rot || 0; r.closest('.campo').querySelector('b').textContent = (it.rot || 0) + '°'; }
+  }
+
+  ['pointerup', 'pointercancel'].forEach(ev =>
+    svg.addEventListener(ev, () => { arraste = null; }));
+
+  /** Redesenha o conteúdo de um item sem reconstruir o painel — é o que
+      permite digitar num campo de texto sem perder o foco a cada tecla. */
+  function redesenharMiolo(it) {
+    const g = camItens.querySelector(`[data-id="${it.id}"]`);
+    if (!g) return;
+    // monta direto no SVG: passar por um <div> HTML aninharia tags auto-fechadas
+    // (a seta .fill viraria filha da haste e sumiria)
+    g.innerHTML = mioloItem(it);
+  }
+
+  /** Atualiza só o transform do item em movimento (mais leve que redesenhar tudo). */
+  function redesenharItem(it) {
+    const g = camItens.querySelector(`[data-id="${it.id}"]`);
+    if (!g) return;
+    const flip = it.flip ? -1 : 1;
+    g.setAttribute('transform',
+      `translate(${it.x.toFixed(1)},${it.y.toFixed(1)}) rotate(${(it.rot || 0).toFixed(1)}) scale(${(it.esc * flip).toFixed(3)},${it.esc.toFixed(3)})`);
+  }
+
+  /* ---------------- Teclado ---------------- */
+
+  document.addEventListener('keydown', evt => {
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(evt.target.tagName)) return;
+    const it = itemSel();
+    if (evt.key === 'Escape') { selecionar(null); return; }
+    if (!it) return;
+
+    const passo = evt.shiftKey ? 10 : 1;
+    if (evt.key === 'ArrowLeft') { it.x -= passo; }
+    else if (evt.key === 'ArrowRight') { it.x += passo; }
+    else if (evt.key === 'ArrowUp') { it.y -= passo; }
+    else if (evt.key === 'ArrowDown') { it.y += passo; }
+    else if (evt.key === 'Delete' || evt.key === 'Backspace') { excluir(); return; }
+    else if (evt.key.toLowerCase() === 'd' && (evt.ctrlKey || evt.metaKey)) { duplicar(); evt.preventDefault(); return; }
+    else return;
+
+    evt.preventDefault();
+    redesenharItem(it);
+    desenharSelecao();
+  });
+
+  function excluir() {
+    estado.itens = estado.itens.filter(i => i.id !== sel);
+    sel = null;
+    desenhar();
+    atualizarInspetor();
+  }
+  function duplicar() {
+    const it = itemSel(); if (!it) return;
+    const copia = Object.assign({}, it, { id: novoId(), x: it.x + 24, y: it.y + 24 });
+    estado.itens.push(copia);
+    desenhar();
+    selecionar(copia.id);
+  }
+
+  /* ---------------- Paleta ---------------- */
+
+  function miniatura(s) {
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><g class="simbolo">${window.svgSimbolo(s, 0).replace('{{label}}', s.rotulo || '')}</g></svg>`;
+  }
+
+  function montarPaleta() {
+    const alvo = $('#paleta');
+    let html = '';
+    window.CATEGORIAS.forEach(cat => {
+      const itens = window.SIMBOLOS.filter(s => s.cat === cat.id);
+      html += `<section class="grupo" data-cat="${cat.id}"><h3>${cat.nome}</h3><div class="grade">`;
+      itens.forEach(s => {
+        html += `<button class="ficha-simbolo${s.risco ? ' risco' : ''}" draggable="true"
+                   data-tipo="simbolo" data-ref="${s.id}" title="${esc(s.nome)}${s.risco ? ' — item de risco, entra na legenda' : ''}">
+                   ${miniatura(s)}<span>${esc(s.nome)}</span>${s.risco ? '<i class="ast">*</i>' : ''}</button>`;
+      });
+      html += `</div></section>`;
+    });
+
+    // Relevos
+    const rel = window.RELEVOS.catalogo();
+    const grupos = [...new Set(rel.map(r => r.grupo))];
+    grupos.forEach(gr => {
+      html += `<section class="grupo" data-cat="relevo"><h3>${gr}</h3><div class="grade grade-relevo">`;
+      rel.filter(r => r.grupo === gr).forEach(r => {
+        const corpo = window.RELEVOS.desenhar({ ref: r.ref, seed: 7 });
+        html += `<button class="ficha-simbolo" draggable="true" data-tipo="relevo" data-ref="${r.ref}" title="${esc(r.nome)}">
+                   <svg viewBox="${r.vb}" preserveAspectRatio="xMidYMid meet"><g class="relevo">${corpo}</g></svg>
+                   <span>${esc(r.nome)}</span></button>`;
+      });
+      html += `</div></section>`;
+    });
+
+    alvo.innerHTML = html;
+  }
+
+  /* clique adiciona no centro; arrastar solta na posição do ponteiro */
+  $('#paleta').addEventListener('click', evt => {
+    const b = evt.target.closest('.ficha-simbolo');
+    if (!b) return;
+    adicionar(b.dataset.tipo, b.dataset.ref);
+  });
+
+  $('#paleta').addEventListener('dragstart', evt => {
+    const b = evt.target.closest('.ficha-simbolo');
+    if (!b) return;
+    evt.dataTransfer.setData('text/plain', JSON.stringify({ tipo: b.dataset.tipo, ref: b.dataset.ref }));
+    evt.dataTransfer.effectAllowed = 'copy';
+  });
+
+  svg.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  svg.addEventListener('drop', e => {
+    e.preventDefault();
+    let dado; try { dado = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (_) { return; }
+    const p = paraSVG(e);
+    adicionar(dado.tipo, dado.ref, Math.round(p.x), Math.round(p.y));
+  });
+
+  /* busca */
+  $('#busca').addEventListener('input', evt => {
+    const q = evt.target.value.trim().toLowerCase();
+    $$('#paleta .ficha-simbolo').forEach(b => {
+      const nome = b.querySelector('span').textContent.toLowerCase();
+      b.hidden = q && !nome.includes(q);
+    });
+    $$('#paleta .grupo').forEach(g => {
+      g.hidden = !g.querySelector('.ficha-simbolo:not([hidden])');
+    });
+  });
+
+  /* ---------------- Inspetor ---------------- */
+
+  function atualizarInspetor() {
+    const it = itemSel();
+    const box = $('#inspetor');
+    if (!it) {
+      box.innerHTML = `<p class="vazio">Nenhum item selecionado. Clique em um símbolo na folha para editar, ou arraste um da paleta.</p>`;
+      return;
+    }
+    const s = it.tipo === 'simbolo' ? window.SIMBOLO_POR_ID[it.ref] : null;
+    const nome = s ? s.nome : (it.tipo === 'texto' ? 'Texto' : it.ref);
+    const aceitaRotulo = it.tipo === 'texto' || (s && s.rotulo);
+
+    box.innerHTML = `
+      <p class="alvo">${esc(nome)}${s && s.risco ? ' <i class="ast">*</i>' : ''}</p>
+      ${aceitaRotulo ? `
+      <label class="campo"><span>${it.tipo === 'texto' ? 'Texto' : 'Rótulo'}</span>
+        <textarea id="in-label" rows="${it.tipo === 'texto' ? 3 : 1}">${esc(it.label || '')}</textarea>
+      </label>` : ''}
+      ${it.tipo === 'texto' ? `
+      <label class="campo"><span>Corpo do texto <b>${it.tamanho || 16}px</b></span>
+        <input id="in-tamanho" type="range" min="9" max="42" value="${it.tamanho || 16}">
+      </label>` : ''}
+      ${s && s.alongavel ? `
+      <label class="campo"><span>Alongamento <b>${it.comprimento || 0}</b></span>
+        <input id="in-comp" type="range" min="0" max="260" value="${it.comprimento || 0}">
+      </label>` : ''}
+      <label class="campo"><span>Tamanho <b>${Math.round(it.esc * 100)}%</b></span>
+        <input id="in-esc" type="range" min="12" max="300" value="${Math.round(it.esc * 100)}">
+      </label>
+      <label class="campo"><span>Rotação <b>${it.rot || 0}°</b></span>
+        <input id="in-rot" type="range" min="-180" max="180" value="${it.rot || 0}">
+      </label>
+      <div class="botoes">
+        <button id="bt-flip">Espelhar</button>
+        <button id="bt-frente">Trazer à frente</button>
+        <button id="bt-tras">Enviar para trás</button>
+        <button id="bt-dup">Duplicar</button>
+        <button id="bt-del" class="perigo">Excluir</button>
+      </div>`;
+
+    const label = $('#in-label');
+    if (label) label.addEventListener('input', e => {
+      it.label = e.target.value;
+      redesenharMiolo(it); desenharSelecao();
+    });
+    const tam = $('#in-tamanho');
+    if (tam) tam.addEventListener('input', e => {
+      it.tamanho = +e.target.value;
+      e.target.closest('.campo').querySelector('b').textContent = it.tamanho + 'px';
+      redesenharMiolo(it); desenharSelecao();
+    });
+    const comp = $('#in-comp');
+    if (comp) comp.addEventListener('input', e => {
+      it.comprimento = +e.target.value;
+      e.target.closest('.campo').querySelector('b').textContent = it.comprimento;
+      // muda o traçado (não só o transform) e a caixa de seleção acompanha
+      redesenharMiolo(it); desenharSelecao();
+    });
+    $('#in-esc').addEventListener('input', e => {
+      it.esc = +e.target.value / 100;
+      e.target.closest('.campo').querySelector('b').textContent = e.target.value + '%';
+      redesenharItem(it); desenharSelecao();
+    });
+    $('#in-rot').addEventListener('input', e => {
+      it.rot = +e.target.value;
+      e.target.closest('.campo').querySelector('b').textContent = it.rot + '°';
+      redesenharItem(it); desenharSelecao();
+    });
+    $('#bt-flip').addEventListener('click', () => { it.flip = !it.flip; redesenharItem(it); desenharSelecao(); });
+    $('#bt-frente').addEventListener('click', () => { mover(it, +1); });
+    $('#bt-tras').addEventListener('click', () => { mover(it, -1); });
+    $('#bt-dup').addEventListener('click', duplicar);
+    $('#bt-del').addEventListener('click', excluir);
+  }
+
+  function mover(it, dir) {
+    const i = estado.itens.indexOf(it);
+    const j = dir > 0 ? estado.itens.length - 1 : 0;
+    estado.itens.splice(i, 1);
+    estado.itens.splice(j, 0, it);
+    desenhar(); selecionar(it.id);
+  }
+
+  /* ---------------- Painel da folha e ficha ---------------- */
+
+  let formsLigados = false;
+
+  function montarPainelFolha() {
+    const m = estado.meta;
+    const f = estado.folha;
+    const ehPersonalizado = f.formato === 'personalizado';
+
+    $('#form-folha').innerHTML = `
+      <label class="campo"><span>Formato da folha</span>
+        <select id="in-formato">${FORMATOS.map(fo =>
+          `<option value="${fo.id}"${fo.id === f.formato ? ' selected' : ''}>${fo.nome}${
+            fo.id === 'personalizado' ? '' : ` — ${fo.l}x${fo.a} mm`}</option>`).join('')}</select></label>
+      <div id="medidas" class="dupla"${ehPersonalizado ? '' : ' hidden'}>
+        <label class="campo"><span>Largura (mm)</span><input id="in-larg" type="number" min="80" max="1200" value="${f.larguraMm}"></label>
+        <label class="campo"><span>Altura (mm)</span><input id="in-alt" type="number" min="80" max="1200" value="${f.alturaMm}"></label>
+      </div>
+      <label class="caixa"><input id="in-ajustar" type="checkbox" checked>
+        <span>Reposicionar o desenho ao trocar de formato</span></label>
+      <hr class="regua">
+      <label class="campo"><span>Título do croqui</span><input data-meta="titulo" value="${esc(m.titulo)}"></label>
+      <label class="campo"><span>Nome do croquista</span><input data-meta="croquista" value="${esc(m.croquista)}"></label>
+      <label class="campo"><span>Abertura em</span><input data-meta="abertura" placeholder="mm/aaaa" value="${esc(m.abertura)}"></label>
+      <label class="campo"><span>Equipe de abertura (um nome por linha)</span><textarea data-meta="equipe" rows="3">${esc((m.equipe || []).join('\n'))}</textarea></label>
+      <label class="campo"><span>Observações da folha</span><textarea data-meta="nota" rows="4" placeholder="Acesso por propriedade particular, necessidade de 4x4, autorizações…">${esc(m.nota)}</textarea></label>`;
+
+    $('#form-ficha').innerHTML = window.FICHA.CAMPOS.map(c => `
+      <label class="campo"><span>${esc(c.rotulo)}</span>
+        <input data-ficha="${c.k}" placeholder="${esc(c.exemplo)}" value="${esc(estado.ficha[c.k] || '')}"></label>`).join('');
+
+    const ajustar = () => $('#in-ajustar').checked;
+
+    $('#in-formato').addEventListener('change', e => {
+      const fo = FORMATOS.find(x => x.id === e.target.value);
+      const personalizado = fo.id === 'personalizado';
+      const L = personalizado ? estado.folha.larguraMm : fo.l;
+      const A = personalizado ? estado.folha.alturaMm : fo.a;
+      trocarFormato(fo.id, L, A, ajustar());
+      montarPainelFolha();
+    });
+
+    ['#in-larg', '#in-alt'].forEach(sel => {
+      const campo = $(sel); if (!campo) return;
+      campo.addEventListener('change', () => {
+        const L = Math.min(1200, Math.max(80, +$('#in-larg').value || 297));
+        const A = Math.min(1200, Math.max(80, +$('#in-alt').value || 210));
+        trocarFormato('personalizado', L, A, ajustar());
+      });
+    });
+
+    if (formsLigados) return;
+    formsLigados = true;
+
+    $('#form-folha').addEventListener('input', evt => {
+      const k = evt.target.dataset.meta; if (!k) return;
+      estado.meta[k] = k === 'equipe'
+        ? evt.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+        : evt.target.value;
+      desenhar();
+    });
+    $('#form-ficha').addEventListener('input', evt => {
+      const k = evt.target.dataset.ficha; if (!k) return;
+      estado.ficha[k] = evt.target.value;
+      desenhar();
+    });
+  }
+
+  function atualizarLegendaPainel() {
+    const usados = window.SIMBOLOS_RISCO.filter(s => idsDeRisco().includes(s.id));
+    const box = $('#legenda-painel');
+    if (!usados.length) {
+      box.innerHTML = `<p class="vazio">Nenhum item de risco na folha. Se houver sifão, refluxo, marmita e afins, eles aparecem aqui e na legenda impressa automaticamente.</p>`;
+      return;
+    }
+    box.innerHTML = `<ul>${usados.map(s => `<li><i class="ast">*</i> ${esc(s.nome)}</li>`).join('')}</ul>`;
+  }
+
+  /* ---------------- Formato da folha ---------------- */
+
+  /** Ajusta o SVG, a grade e o estilo de impressão ao formato guardado no estado. */
+  function aplicarFormato() {
+    const f = estado.folha;
+    LARGURA = mmParaPx(f.larguraMm);
+    ALTURA = mmParaPx(f.alturaMm);
+
+    svg.setAttribute('viewBox', `0 0 ${LARGURA} ${ALTURA}`);
+    const fundo = $('#fundo');
+    fundo.setAttribute('width', LARGURA);
+    fundo.setAttribute('height', ALTURA);
+
+    $('#grade').innerHTML = `
+      <defs>
+        <pattern id="malha" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0 H0 V40" fill="none" stroke="#e9ecec" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="${LARGURA}" height="${ALTURA}" fill="url(#malha)"/>
+      <rect x="28" y="28" width="${LARGURA - 56}" height="${ALTURA - 56}" fill="none" stroke="#dfe4e4" stroke-width="1"/>`;
+
+    // o navegador usa isto na hora de gerar o PDF
+    $('#estilo-impressao').textContent =
+      `@page { size: ${f.larguraMm}mm ${f.alturaMm}mm; margin: 0; }\n` +
+      `@media print { #folha { width: ${f.larguraMm}mm !important; } }`;
+
+    aplicarZoom(zoom);
+  }
+
+  /** Troca o formato, opcionalmente reposicionando o que já está desenhado. */
+  function trocarFormato(id, larguraMm, alturaMm, ajustarDesenho) {
+    const antesL = LARGURA, antesA = ALTURA;
+    estado.folha = { formato: id, larguraMm, alturaMm };
+    aplicarFormato();
+
+    if (ajustarDesenho && (antesL !== LARGURA || antesA !== ALTURA)) {
+      const rx = LARGURA / antesL, ry = ALTURA / antesA;
+      const rMenor = Math.min(rx, ry);
+      estado.itens.forEach(it => {
+        it.x = Math.round(it.x * rx);
+        it.y = Math.round(it.y * ry);
+        it.esc = +(it.esc * rMenor).toFixed(3);
+      });
+    }
+    desenhar();
+  }
+
+  /* ---------------- Calque (imagem de referência) ---------------- */
+
+  $('#bt-calque').addEventListener('click', () => $('#arquivo-calque').click());
+
+  $('#arquivo-calque').addEventListener('change', evt => {
+    const f = evt.target.files[0]; if (!f) return;
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const largura = Math.min(LARGURA * 0.92, img.naturalWidth);
+        const altura = largura * (img.naturalHeight / img.naturalWidth);
+        estado.calque = {
+          src: leitor.result,
+          w: Math.round(largura), h: Math.round(altura),
+          x: Math.round((LARGURA - largura) / 2),
+          y: Math.round((ALTURA - altura) / 2),
+          op: 0.45,
+          proporcao: img.naturalHeight / img.naturalWidth
+        };
+        montarPainelCalque(); desenharCalque();
+      };
+      img.onerror = () => alert('Não foi possível ler essa imagem. Use PNG ou JPG.');
+      img.src = leitor.result;
+    };
+    leitor.readAsDataURL(f);
+    evt.target.value = '';
+  });
+
+  function montarPainelCalque() {
+    const c = estado.calque;
+    const box = $('#calque-controles');
+    if (!c) {
+      box.innerHTML = `<p class="vazio">Nenhuma imagem carregada. Serve foto de croqui em papel, print de PDF ou esboço de campo — qualquer PNG ou JPG.</p>`;
+      return;
+    }
+    box.innerHTML = `
+      <label class="campo"><span>Opacidade <b>${Math.round(c.op * 100)}%</b></span>
+        <input id="cal-op" type="range" min="5" max="100" value="${Math.round(c.op * 100)}"></label>
+      <label class="campo"><span>Largura <b>${c.w} px</b></span>
+        <input id="cal-w" type="range" min="200" max="1600" value="${c.w}"></label>
+      <label class="campo"><span>Posição horizontal</span>
+        <input id="cal-x" type="range" min="-400" max="${LARGURA}" value="${c.x}"></label>
+      <label class="campo"><span>Posição vertical</span>
+        <input id="cal-y" type="range" min="-400" max="${ALTURA}" value="${c.y}"></label>
+      <div class="botoes"><button id="cal-remover" class="perigo">Remover calque</button></div>`;
+
+    $('#cal-op').addEventListener('input', e => {
+      c.op = +e.target.value / 100; desenharCalque();
+      e.target.closest('.campo').querySelector('b').textContent = e.target.value + '%';
+    });
+    $('#cal-w').addEventListener('input', e => {
+      c.w = +e.target.value; c.h = Math.round(c.w * c.proporcao); desenharCalque();
+      e.target.closest('.campo').querySelector('b').textContent = c.w + ' px';
+    });
+    $('#cal-x').addEventListener('input', e => { c.x = +e.target.value; desenharCalque(); });
+    $('#cal-y').addEventListener('input', e => { c.y = +e.target.value; desenharCalque(); });
+    $('#cal-remover').addEventListener('click', () => {
+      estado.calque = null; montarPainelCalque(); desenharCalque();
+    });
+  }
+
+  /* ---------------- Zoom ---------------- */
+
+  function aplicarZoom(z) {
+    zoom = Math.min(2.2, Math.max(0.35, z));
+    $('#folha').style.width = (LARGURA * zoom) + 'px';
+    $('#zoom-valor').textContent = Math.round(zoom * 100) + '%';
+  }
+  $('#zoom-mais').addEventListener('click', () => aplicarZoom(zoom + 0.1));
+  $('#zoom-menos').addEventListener('click', () => aplicarZoom(zoom - 0.1));
+  $('#zoom-ajustar').addEventListener('click', () => {
+    const disp = $('#mesa').clientWidth - 64;
+    aplicarZoom(disp / LARGURA);
+  });
+
+  /* ---------------- Exportação ---------------- */
+
+  function svgLimpo() {
+    const clone = svg.cloneNode(true);
+    clone.querySelectorAll('.so-tela').forEach(n => n.remove());
+    clone.setAttribute('width', LARGURA);
+    clone.setAttribute('height', ALTURA);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    return new XMLSerializer().serializeToString(clone);
+  }
+
+  function baixar(blob, nome) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const nomeArquivo = ext =>
+    (estado.meta.titulo || 'croqui').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase().replace(/^-|-$/g, '') + '.' + ext;
+
+  $('#bt-svg').addEventListener('click', () => {
+    baixar(new Blob([svgLimpo()], { type: 'image/svg+xml' }), nomeArquivo('svg'));
+  });
+
+  $('#bt-png').addEventListener('click', () => {
+    const escala = 2;
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = LARGURA * escala; cv.height = ALTURA * escala;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      cv.toBlob(b => baixar(b, nomeArquivo('png')), 'image/png');
+    };
+    img.onerror = () => alert('Não foi possível gerar o PNG. Exporte em SVG e converta fora do navegador.');
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgLimpo());
+  });
+
+  $('#bt-pdf').addEventListener('click', () => {
+    // a folha já é A4 paisagem; a folha de estilo de impressão manda o resto sumir
+    window.print();
+  });
+
+  $('#bt-json').addEventListener('click', () => {
+    const { calque, ...semCalque } = estado;
+    const dados = JSON.stringify({ versao: 1, ...semCalque }, null, 2);
+    baixar(new Blob([dados], { type: 'application/json' }), nomeArquivo('json'));
+  });
+
+  $('#bt-abrir').addEventListener('click', () => $('#arquivo').click());
+  $('#arquivo').addEventListener('change', evt => {
+    const f = evt.target.files[0]; if (!f) return;
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      try {
+        const dados = JSON.parse(leitor.result);
+        const calqueAtual = estado.calque;
+        estado = {
+          meta: dados.meta || vazio().meta,
+          ficha: dados.ficha || {},
+          itens: dados.itens || [],
+          folha: dados.folha || vazio().folha,
+          calque: calqueAtual
+        };
+        aplicarFormato();
+        seq = estado.itens.length + 1;
+        estado.itens.forEach((it, i) => { it.id = 'i' + (i + 1); });
+        seq = estado.itens.length + 1;
+        sel = null;
+        montarPainelFolha(); desenhar(); atualizarInspetor();
+      } catch (_) {
+        alert('Arquivo inválido. Escolha um .json exportado por este editor.');
+      }
+    };
+    leitor.readAsText(f);
+    evt.target.value = '';
+  });
+
+  $('#bt-novo').addEventListener('click', () => {
+    if (!confirm('Começar uma folha nova? O que estiver na tela e não foi salvo se perde.')) return;
+    const calqueAtual = estado.calque;
+    estado = vazio(); estado.calque = calqueAtual; sel = null; seq = 1;
+    aplicarFormato(); montarPainelFolha(); desenhar(); atualizarInspetor();
+  });
+
+  $('#bt-texto').addEventListener('click', () => {
+    adicionar('texto', 'texto', LARGURA / 2, ALTURA / 2, { esc: 1, label: 'Texto', tamanho: 16 });
+  });
+
+  /* ---------------- Exemplo ---------------- */
+
+  $('#bt-exemplo').addEventListener('click', carregarExemplo);
+
+  function carregarExemplo() {
+    estado = {
+      meta: {
+        titulo: 'Croqui Cânion do teste',
+        croquista: 'Nome do croquista',
+        abertura: '05/2024',
+        equipe: ['Beltrano', 'Ciclano', 'Fulano'],
+        nota: 'Terreno do seu João, tem que conversar com ele\nantes para abrir a porteira.\nNa trilha de ida tem abelha, fazer em silêncio.'
+      },
+      ficha: {
+        cidade: 'Baldim - MG', afluente: 'Rio Claro', estacao: 'Outono',
+        aproximacao: '1:30  2 km', progressao: '5 h  1,7 km', desnivel: '210 m',
+        retorno: '1 h  2 km', carros: 'x1', maiorRapel: '60 m', cordas: '3x60',
+        rocha: 'Arenito', latEstacionamento: '-19.2801, -43.9612',
+        latEntrada: '-19.2833, -43.9570', latSaida: '-19.2902, -43.9488'
+      },
+      itens: [],
+      folha: { formato: 'a4-paisagem', larguraMm: 297, alturaMm: 210 },
+      calque: estado.calque
+    };
+    aplicarFormato();
+    sel = null; seq = 1;
+
+    const add = (tipo, ref, x, y, extras) => {
+      const it = Object.assign({
+        id: novoId(), tipo, ref, x, y, esc: tipo === 'relevo' ? 1 : 0.5,
+        rot: 0, flip: false, seed: 4242
+      }, extras || {});
+      estado.itens.push(it);
+    };
+
+    /* Trecho 1 — entrada, R1 e caminhada até a desescalada */
+    add('simbolo', 'inicio-canyon', 58, 52, { esc: 0.6 });
+    add('texto', 'texto', 92, 46, { esc: 1, label: 'MD', tamanho: 18 });
+    add('simbolo', 'ancoragens-fixas', 142, 96, { esc: 0.32 });
+    add('texto', 'texto', 130, 74, { esc: 1, label: 'MD', tamanho: 16 });
+    add('relevo', 'queda:rampada:20-40', 70, 88);
+    add('simbolo', 'rapel-id', 98, 150, { esc: 0.45, label: 'R1' });
+    add('texto', 'texto', 44, 212, { esc: 1, label: '30 m', tamanho: 16 });
+    add('relevo', 'caminhada-blocos:100', 148, 238);
+    add('simbolo', 'rapel-molhado', 236, 214, { esc: 0.4 });
+    add('simbolo', 'estreitos', 306, 208, { esc: 0.36 });
+    add('relevo', 'queda:desescalada:10-20', 268, 248);
+    add('texto', 'texto', 300, 322, { esc: 1, label: '15 m', tamanho: 16 });
+    add('relevo', 'caminhada:100', 299, 338);
+
+    /* Trecho 2 — R2, o rapel maior, poço com refluxo */
+    add('simbolo', 'ancoragens-fixas', 452, 318, { esc: 0.32 });
+    add('simbolo', 'ancoragens-fixas', 528, 318, { esc: 0.32 });
+    add('texto', 'texto', 478, 300, { esc: 1, label: 'MD', tamanho: 16 });
+    add('simbolo', 'corrimao', 490, 340, { esc: 0.34 });
+    add('simbolo', 'rapel-id', 470, 378, { esc: 0.45, label: 'R2' });
+    add('relevo', 'queda:vertical:40-60', 474, 392);
+    add('texto', 'texto', 420, 500, { esc: 1, label: '60 m', tamanho: 16 });
+    add('simbolo', 'rapel-molhado', 522, 470, { esc: 0.4 });
+    add('simbolo', 'refluxo', 548, 588, { esc: 0.38 });
+    add('relevo', 'poco:20', 460, 604);
+    add('relevo', 'caminhada:50', 552, 634);
+    add('texto', 'texto', 596, 660, { esc: 1, label: '10 m', tamanho: 16 });
+    add('simbolo', 'continua-pagina', 660, 648, { esc: 0.38 });
+
+    /* Trecho 3 — retomada no alto à direita, R3 e saída */
+    add('simbolo', 'continua-pagina', 596, 146, { esc: 0.38 });
+    add('simbolo', 'arvores', 690, 140, { esc: 0.42 });
+    add('texto', 'texto', 724, 128, { esc: 1, label: 'ME\nAA', tamanho: 18 });
+    add('simbolo', 'rapel-id', 690, 208, { esc: 0.45, label: 'R3' });
+    add('simbolo', 'abrasao-forte', 738, 194, { esc: 0.4 });
+    add('relevo', 'queda:rampada:40-60', 700, 222);
+    add('texto', 'texto', 730, 318, { esc: 1, label: '50 m', tamanho: 16 });
+    add('simbolo', 'rapel-molhado', 796, 288, { esc: 0.4 });
+    add('simbolo', 'via-de-escape', 986, 268, { esc: 0.8 });
+    add('relevo', 'caminhada-blocos:100', 812, 437);
+    add('relevo', 'poco:30', 932, 447);
+    add('texto', 'texto', 1028, 414, { esc: 1, label: 'MD', tamanho: 16 });
+    add('simbolo', 'final-canyon', 1076, 468, { esc: 0.58 });
+
+    montarPainelFolha();
+    desenhar();
+    atualizarInspetor();
+  }
+
+  /* ---------------- Abas do painel direito ---------------- */
+
+  $$('.aba').forEach(bt => bt.addEventListener('click', () => {
+    $$('.aba').forEach(b => b.setAttribute('aria-selected', b === bt));
+    $$('.painel').forEach(p => p.hidden = p.id !== bt.dataset.painel);
+  }));
+
+  /* ---------------- Início ---------------- */
+
+  montarPaleta();
+  aplicarFormato();
+  montarPainelFolha();
+  montarPainelCalque();
+  desenhar();
+  atualizarInspetor();
+  aplicarZoom(0.72);
+  window.addEventListener('resize', () => desenharSelecao());
+
+  // exposto para depuração no console
+  window.CROQUI = {
+    get estado() { return estado; },
+    desenhar, adicionar, carregarExemplo
+  };
+})();
+
+</script>
+</body>
+</html>
