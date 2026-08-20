@@ -107,6 +107,14 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .topo button:hover,
 .barra-mesa button:hover { background: var(--grafite-700); border-color: var(--grafite-600); }
 
+.barra-mesa button.ativo,
+.barra-mesa button.ativo:hover {
+  background: var(--agua);
+  border-color: var(--agua);
+  color: var(--grafite-900);
+  font-weight: 600;
+}
+
 .topo button.destaque {
   background: var(--tinta);
   color: var(--grafite-900);

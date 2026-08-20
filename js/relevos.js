@@ -111,9 +111,39 @@
     return { linha, pedras };
   }
 
+  /** Traçado livre "adaptado ao croqui": recebe os pontos que o usuário puxou
+      (em coordenadas locais) e devolve o `d` de um path já suavizado e com uma
+      leve irregularidade determinística (seed), para simular solo/parede desenhada
+      à mão. `rug` é a amplitude do ruído em px; 0 = linha limpa. */
+  function tracado(pts, seed, rug) {
+    if (!pts || pts.length < 2) return '';
+    rug = rug || 0;
+    const r = rng((seed || 1) >>> 0);
+    const P = pts.map(p => [p[0], p[1]]);
+    // desloca cada ponto interno na perpendicular à direção local (extremos ficam)
+    for (let i = 1; i < P.length - 1; i++) {
+      const a = pts[i - 1], b = pts[i + 1];
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const L = Math.hypot(dx, dy) || 1;
+      const amp = (r() * 2 - 1) * rug;
+      P[i][0] += (-dy / L) * amp;
+      P[i][1] += (dx / L) * amp;
+    }
+    // mesma suavização das quedas: quadráticas por ponto médio (Catmull-Rom simpl.)
+    let d = `M${P[0][0].toFixed(1)} ${P[0][1].toFixed(1)}`;
+    for (let i = 1; i < P.length; i++) {
+      const p0 = P[i - 1], p1 = P[i];
+      const cx = (p0[0] + p1[0]) / 2, cy = (p0[1] + p1[1]) / 2;
+      d += ` Q${p0[0].toFixed(1)} ${p0[1].toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)}`;
+    }
+    const last = P[P.length - 1];
+    d += ` L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
+    return d;
+  }
+
   window.RELEVOS = {
     FAIXAS, DISTANCIAS, POCOS,
-    queda, caminhada, caminhadaBlocos,
+    queda, caminhada, caminhadaBlocos, tracado,
 
     /** Monta o SVG interno de um item de relevo. */
     desenhar(item) {

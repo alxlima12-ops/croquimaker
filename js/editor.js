@@ -65,16 +65,26 @@
   // BACKLOG-5 (item 5): além de 'simbolo', 'relevo' e 'texto', adicionar um tipo
   // 'imagem' aqui (logos de equipe, QR de Wikiloc, fotos). Renderiza como
   // <image href={dataURL}>; entra no export, diferente do calque. Ver README.
-  /** Conteúdo interno de um item (sem o <g class="item"> externo). */
+  /** Conteúdo interno de um item (sem o <g class="item"> externo).
+      Símbolos, relevos e traçados são linhas com fill:none — clicar exatamente
+      em cima do traço fino é difícil. Por isso cada um leva uma cópia invisível
+      `.hit` com traço grosso e transparente: dá uma folga de clique ao redor da
+      linha, sem mudar o desenho nem a caixa de seleção (getBBox ignora o traço). */
   function mioloItem(it) {
     if (it.tipo === 'simbolo') {
       const s = window.SIMBOLO_POR_ID[it.ref];
       if (!s) return '';
       const corpo = window.svgSimbolo(s, it.comprimento).replace('{{label}}', esc(it.label || s.rotulo || ''));
-      return `<g class="simbolo" transform="translate(-50,-50)">${corpo}</g>`;
+      return `<g class="hit" transform="translate(-50,-50)">${corpo}</g>` +
+             `<g class="simbolo" transform="translate(-50,-50)">${corpo}</g>`;
     }
     if (it.tipo === 'relevo') {
-      return `<g class="relevo">${window.RELEVOS.desenhar(it)}</g>`;
+      const corpo = window.RELEVOS.desenhar(it);
+      return `<g class="hit">${corpo}</g><g class="relevo">${corpo}</g>`;
+    }
+    if (it.tipo === 'tracado') {
+      const corpo = `<path d="${window.RELEVOS.tracado(it.pts, it.seed, it.rugosidade)}"/>`;
+      return `<g class="hit">${corpo}</g><g class="relevo">${corpo}</g>`;
     }
     if (it.tipo === 'texto') {
       const linhas = String(it.label || '').split('\n');
@@ -140,15 +150,21 @@
     const len = Math.hypot(vx, vy) || 1;
     const gir = { x: topo.x + (vx / len) * 34, y: topo.y + (vy / len) * 34 };
 
-    // cada alça tem um alvo invisível bem maior que o desenho, senão errar
-    // por três pixels seleciona o que estiver embaixo
+    // a alça de escala fica no canto inferior direito, empurrada um pouco para
+    // FORA da caixa. Antes o alvo (36px, centrado no canto) cobria o corpo de
+    // itens pequenos, e o clique para arrastar acabava escalando. Agora o alvo
+    // é menor e projetado para fora, deixando o interior livre para mover.
+    let dxs = c[2].x - cx, dys = c[2].y - cy;
+    const dl = Math.hypot(dxs, dys) || 1;
+    const escP = { x: c[2].x + (dxs / dl) * 9, y: c[2].y + (dys / dl) * 9 };
+
     camUI.innerHTML =
       `<polygon class="sel-caixa" points="${c.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"/>` +
       `<line class="sel-caixa" x1="${topo.x}" y1="${topo.y}" x2="${gir.x}" y2="${gir.y}"/>` +
-      `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="18"/>` +
-      `<rect class="alca-alvo" data-alca="escalar" x="${c[2].x - 18}" y="${c[2].y - 18}" width="36" height="36"/>` +
+      `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="16"/>` +
+      `<circle class="alca-alvo" data-alca="escalar" cx="${escP.x}" cy="${escP.y}" r="13"/>` +
       `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="7"/>` +
-      `<rect class="alca" data-alca="escalar" x="${c[2].x - 6}" y="${c[2].y - 6}" width="12" height="12"/>`;
+      `<rect class="alca" data-alca="escalar" x="${escP.x - 6}" y="${escP.y - 6}" width="12" height="12"/>`;
   }
 
   function selecionar(id) {
@@ -193,14 +209,26 @@
   /* ---------------- Arrastar, escalar, girar ---------------- */
 
   let arraste = null;
+  let modoDesenho = false;   // ferramenta "Desenhar solo" ligada
+  let desenhando = null;     // { pts:[[x,y],...] } enquanto o traço é puxado
+
+  const polyD = pts => 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L');
 
   svg.addEventListener('pointerdown', evt => {
+    const p = paraSVG(evt);
+
+    // modo de desenho livre: começa a capturar o traço, ignora seleção
+    if (modoDesenho) {
+      desenhando = { pts: [[p.x, p.y]] };
+      svg.setPointerCapture(evt.pointerId);
+      return;
+    }
+
     // BACKLOG-1 (item 1): quando uma alça está pega, itens de texto ainda podem
     // roubar o ponteiro. Avaliar uma trava global de arraste e/ou "bloquear"
     // itens prontos para que não sejam selecionáveis por engano.
     const alca = evt.target.closest('[data-alca]');
     const g = evt.target.closest('.item');
-    const p = paraSVG(evt);
 
     if (alca && sel) {
       const it = itemSel();
@@ -227,6 +255,15 @@
   });
 
   svg.addEventListener('pointermove', evt => {
+    if (desenhando) {
+      const p = paraSVG(evt);
+      const last = desenhando.pts[desenhando.pts.length - 1];
+      if (Math.hypot(p.x - last[0], p.y - last[1]) >= 6) {
+        desenhando.pts.push([p.x, p.y]);
+        camUI.innerHTML = `<path class="tracado-preview" d="${polyD(desenhando.pts)}"/>`;
+      }
+      return;
+    }
     if (!arraste) return;
     const p = paraSVG(evt);
     const it = arraste.it;
@@ -255,7 +292,28 @@
   }
 
   ['pointerup', 'pointercancel'].forEach(ev =>
-    svg.addEventListener(ev, () => { arraste = null; }));
+    svg.addEventListener(ev, () => {
+      arraste = null;
+      if (desenhando) { finalizarTracado(desenhando.pts); desenhando = null; }
+    }));
+
+  /** Fecha um traço livre: torna os pontos locais e cria o item 'tracado'. */
+  function finalizarTracado(pts) {
+    camUI.innerHTML = '';
+    if (!pts || pts.length < 2) return;   // só um clique, sem arrastar
+    const ox = pts[0][0], oy = pts[0][1];
+    const locais = pts.map(p => [+(p[0] - ox).toFixed(1), +(p[1] - oy).toFixed(1)]);
+    adicionar('tracado', 'tracado', Math.round(ox), Math.round(oy), { esc: 1, pts: locais, rugosidade: 3 });
+  }
+
+  function setModoDesenho(on) {
+    modoDesenho = on;
+    const bt = $('#bt-tracado');
+    bt.setAttribute('aria-pressed', on ? 'true' : 'false');
+    bt.classList.toggle('ativo', on);
+    svg.style.cursor = on ? 'crosshair' : '';
+    if (on) selecionar(null);
+  }
 
   /** Redesenha o conteúdo de um item sem reconstruir o painel — é o que
       permite digitar num campo de texto sem perder o foco a cada tecla. */
@@ -281,7 +339,7 @@
   document.addEventListener('keydown', evt => {
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(evt.target.tagName)) return;
     const it = itemSel();
-    if (evt.key === 'Escape') { selecionar(null); return; }
+    if (evt.key === 'Escape') { if (modoDesenho) setModoDesenho(false); selecionar(null); return; }
     if (!it) return;
 
     const passo = evt.shiftKey ? 10 : 1;
@@ -393,7 +451,7 @@
       return;
     }
     const s = it.tipo === 'simbolo' ? window.SIMBOLO_POR_ID[it.ref] : null;
-    const nome = s ? s.nome : (it.tipo === 'texto' ? 'Texto' : it.ref);
+    const nome = s ? s.nome : (it.tipo === 'texto' ? 'Texto' : it.tipo === 'tracado' ? 'Traçado livre (solo/parede)' : it.ref);
     const aceitaRotulo = it.tipo === 'texto' || (s && s.rotulo);
 
     box.innerHTML = `
@@ -409,6 +467,10 @@
       ${s && s.alongavel ? `
       <label class="campo"><span>Alongamento <b>${it.comprimento || 0}</b></span>
         <input id="in-comp" type="range" min="0" max="260" value="${it.comprimento || 0}">
+      </label>` : ''}
+      ${it.tipo === 'tracado' ? `
+      <label class="campo"><span>Rugosidade <b>${it.rugosidade || 0}</b></span>
+        <input id="in-rug" type="range" min="0" max="12" value="${it.rugosidade || 0}">
       </label>` : ''}
       <label class="campo"><span>Tamanho <b>${Math.round(it.esc * 100)}%</b></span>
         <input id="in-esc" type="range" min="12" max="300" value="${Math.round(it.esc * 100)}">
@@ -440,6 +502,12 @@
       it.comprimento = +e.target.value;
       e.target.closest('.campo').querySelector('b').textContent = it.comprimento;
       // muda o traçado (não só o transform) e a caixa de seleção acompanha
+      redesenharMiolo(it); desenharSelecao();
+    });
+    const rug = $('#in-rug');
+    if (rug) rug.addEventListener('input', e => {
+      it.rugosidade = +e.target.value;
+      e.target.closest('.campo').querySelector('b').textContent = it.rugosidade;
       redesenharMiolo(it); desenharSelecao();
     });
     $('#in-esc').addEventListener('input', e => {
@@ -759,8 +827,11 @@
   });
 
   $('#bt-texto').addEventListener('click', () => {
+    if (modoDesenho) setModoDesenho(false);
     adicionar('texto', 'texto', LARGURA / 2, ALTURA / 2, { esc: 1, label: 'Texto', tamanho: 16 });
   });
+
+  $('#bt-tracado').addEventListener('click', () => setModoDesenho(!modoDesenho));
 
   /* ---------------- Exemplo ---------------- */
 

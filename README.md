@@ -112,7 +112,9 @@ sem servidor.
       "flip": false,            // espelhamento horizontal
       "label": "R1",            // rótulo (rapel) ou conteúdo (texto)
       "comprimento": 0,         // alongamento anisotrópico, só símbolos alongáveis
-      "seed": 4242              // semente do traçado, só para relevos
+      "pts": [[0,0]],           // pontos locais, só no tipo "tracado" (linha livre)
+      "rugosidade": 3,          // irregularidade do tracado, só no tipo "tracado"
+      "seed": 4242              // semente do traçado (relevos e tracado)
     }
   ]
 }
@@ -128,8 +130,10 @@ Em ordem do que eu atacaria primeiro:
 
 1. **Desfazer/refazer.** Hoje um Delete sem querer custa caro. Um histórico de
    estados no `editor.js` resolve em pouca coisa.
-2. **Traçado livre do perfil.** Os relevos são pré-fabricados; o croquista real
-   vai querer desenhar a linha do cânion à mão, com pontos de controle.
+2. **Traçado livre do perfil — pontos de controle editáveis.** Já existe a
+   ferramenta "Desenhar solo" (ver "Feito nesta rodada"): puxa a linha à mão e
+   vira um objeto. Falta poder reeditar os pontos depois de criado (hoje só
+   move/escala/gira/apaga o traço inteiro).
 3. **Reposicionamento inteligente ao trocar de formato.** Hoje a escala é
    proporcional e cega: virar uma folha paisagem em retrato estica o traçado e
    pode aproximar demais os elementos. O certo seria reflowar o perfil.
@@ -153,6 +157,20 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Selecionar ficou fácil (folga de clique).** Símbolos, relevos e traçados são
+  linhas com `fill:none`; antes só o traço fino registrava o clique. Agora cada um
+  ganha uma cópia invisível `.hit` (traço grosso transparente) que dá ~9 px de
+  folga ao redor da linha, sem mudar o desenho nem a caixa de seleção. Ver
+  `mioloItem` e a regra `.hit` no `<style>` do `index.html`.
+- **Arrastar não vira mais "escalar".** A alça de escala tinha um alvo de 36 px
+  centrado no canto que cobria o corpo de itens pequenos — o clique para mover
+  acabava redimensionando. Agora o alvo é menor e projetado para fora do canto,
+  deixando o interior livre para mover. Ver `desenharSelecao` em `js/editor.js`.
+- **Ferramenta "Desenhar solo" (linha livre).** Um botão na barra liga o modo de
+  desenho: você puxa a linha do solo/parede à mão e, ao soltar, ela vira um objeto
+  (mover/escalar/girar/apagar) já suavizado, com uma leve irregularidade ajustável
+  ("Rugosidade" no inspetor) no mesmo traço do croqui. Novo `tipo:'tracado'`;
+  gerador em `RELEVOS.tracado`. Esc sai do modo.
 - **Alongamento anisotrópico dos elementos de progressão (item 3).** Rapel seco,
   rapel molhado, salto, desescalada e escalada deixaram de ser um `svg` fixo e
   passaram a ter `alongavel:true` e `render(comprimento)` (`js/simbologia.js`): a

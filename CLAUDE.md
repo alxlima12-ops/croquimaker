@@ -63,6 +63,14 @@ string num canvas; PDF usa `window.print()` com `#estilo-impressao` (gerado em
   "não funcionar"). `selecionar()` já chama isso na hora certa.
 - `sincronizarInspetor(it)` espelha valores no painel sem remontá-lo (arraste).
 
+Cada símbolo/relevo/traçado é desenhado **duas vezes** em `mioloItem`: uma cópia
+`.hit` (traço grosso transparente, `pointer-events:stroke`) só para dar folga de
+clique ao redor da linha fina, e a cópia visível. `getBBox` ignora o traço, então
+a caixa de seleção não incha. Ferramenta "Desenhar solo": `modoDesenho`/`desenhando`
+capturam o traço no `pointerdown/move/up` do svg; `finalizarTracado` vira o item
+`tracado`. A alça de escala fica projetada para fora do canto (era um alvo de 36px
+centrado no canto que cobria itens pequenos e transformava arraste em escala).
+
 ## Modelo de dados (contrato de save/load)
 
 ```jsonc
@@ -72,14 +80,17 @@ string num canvas; PDF usa `window.print()` com `#estilo-impressao` (gerado em
   "ficha": { /* 14 campos das informações mínimas */ },
   "folha": { "formato":"a4-paisagem","larguraMm":297,"alturaMm":210 },
   "itens": [
-    { "id","tipo","ref","x","y","esc","rot","flip","label","comprimento","seed" }
+    { "id","tipo","ref","x","y","esc","rot","flip","label","comprimento","pts","rugosidade","seed" }
   ]
 }
 ```
 
 `comprimento` (padrão 0) é o alongamento anisotrópico; só símbolos `alongavel`
-o usam. Campo aditivo e opcional — `.json` antigos (sem ele) abrem normalmente.
-`tipo` ∈ `simbolo | relevo | texto` (em breve `imagem`, ver BACKLOG-5).
+o usam. `pts` (array de `[x,y]` locais) e `rugosidade` só existem no tipo
+`tracado` (linha de solo/parede desenhada à mão livre; render por
+`RELEVOS.tracado(pts, seed, rugosidade)`). Campos aditivos e opcionais — `.json`
+antigos abrem normalmente. `tipo` ∈ `simbolo | relevo | texto | tracado`
+(em breve `imagem`, ver BACKLOG-5).
 `ref` é o id do símbolo, ou `"queda:vertical:40-60"`, `"poco:20"` etc.
 O **calque não é serializado** (é só referência de tela).
 Versione `versao` ao mudar o formato do estado.

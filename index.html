@@ -50,12 +50,13 @@
   <section id="mesa">
     <div class="barra-mesa">
       <button id="bt-texto" type="button">Inserir texto</button>
+      <button id="bt-tracado" type="button" aria-pressed="false" title="Desenhe uma linha de solo ou parede à mão livre">Desenhar solo</button>
       <span class="divisor" aria-hidden="true"></span>
       <button id="zoom-menos" type="button" aria-label="Diminuir zoom">−</button>
       <span id="zoom-valor" class="mono">100%</span>
       <button id="zoom-mais" type="button" aria-label="Aumentar zoom">+</button>
       <button id="zoom-ajustar" type="button">Ajustar à tela</button>
-      <span class="dica">Arraste para mover · alça superior gira · canto inferior direito redimensiona · Delete apaga</span>
+      <span class="dica">Arraste para mover · alça superior gira · canto inferior direito redimensiona · Delete apaga · <b>Desenhar solo</b>: puxe a linha e solte (Esc sai)</span>
     </div>
 
     <div class="rolagem">
@@ -67,6 +68,9 @@
             .simbolo { stroke:#000; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .relevo  { stroke:#000; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .fill      { fill:#000; stroke:none; }
+            /* cópia invisível de traço grosso: folga de clique ao redor da linha */
+            .hit, .hit * { fill:none !important; stroke:transparent !important; stroke-width:20 !important; vector-effect:non-scaling-stroke !important; pointer-events:stroke; }
+            .tracado-preview { fill:none; stroke:#12908d; stroke-width:1.6; stroke-dasharray:5 4; }
             .tracejado { stroke-dasharray:8 7; }
             .texto, .texto-item { fill:#000; stroke:none; font-family:Arial, Helvetica, sans-serif; }
             .item .texto-item { pointer-events:auto; }
