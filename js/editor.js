@@ -161,9 +161,9 @@
     camUI.innerHTML =
       `<polygon class="sel-caixa" points="${c.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"/>` +
       `<line class="sel-caixa" x1="${topo.x}" y1="${topo.y}" x2="${gir.x}" y2="${gir.y}"/>` +
-      `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="16"/>` +
+      `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="21"/>` +
       `<circle class="alca-alvo" data-alca="escalar" cx="${escP.x}" cy="${escP.y}" r="13"/>` +
-      `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="7"/>` +
+      `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="8"/>` +
       `<rect class="alca" data-alca="escalar" x="${escP.x - 6}" y="${escP.y - 6}" width="12" height="12"/>`;
   }
 
@@ -214,6 +214,28 @@
 
   const polyD = pts => 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L');
 
+  /** Escolhe qual item pegar quando vários se sobrepõem no ponto do clique.
+      Um texto captura o clique na CAIXA inteira (maior que as letras) e roubava
+      linhas/símbolos vizinhos. Regra: 1) mantém o que já está selecionado se
+      estiver sob o ponteiro; 2) senão, prefere linhas/símbolos a texto; 3) senão,
+      o de cima. Assim clicar numa linha pega a linha, não a caixa do texto ao lado. */
+  function itemNoPonto(evt) {
+    const els = document.elementsFromPoint(evt.clientX, evt.clientY);
+    const grupos = [];
+    for (const el of els) {
+      const g = el.closest ? el.closest('.item') : null;
+      if (g && grupos.indexOf(g) === -1) grupos.push(g);
+    }
+    if (!grupos.length) return null;
+    const selG = grupos.find(g => g.dataset.id === sel);
+    if (selG) return selG;
+    const naoTexto = grupos.find(g => {
+      const it = estado.itens.find(i => i.id === g.dataset.id);
+      return it && it.tipo !== 'texto';
+    });
+    return naoTexto || grupos[0];
+  }
+
   svg.addEventListener('pointerdown', evt => {
     const p = paraSVG(evt);
 
@@ -224,11 +246,8 @@
       return;
     }
 
-    // BACKLOG-1 (item 1): quando uma alça está pega, itens de texto ainda podem
-    // roubar o ponteiro. Avaliar uma trava global de arraste e/ou "bloquear"
-    // itens prontos para que não sejam selecionáveis por engano.
     const alca = evt.target.closest('[data-alca]');
-    const g = evt.target.closest('.item');
+    const g = alca ? null : itemNoPonto(evt);
 
     if (alca && sel) {
       const it = itemSel();
@@ -304,6 +323,7 @@
     const ox = pts[0][0], oy = pts[0][1];
     const locais = pts.map(p => [+(p[0] - ox).toFixed(1), +(p[1] - oy).toFixed(1)]);
     adicionar('tracado', 'tracado', Math.round(ox), Math.round(oy), { esc: 1, pts: locais, rugosidade: 3 });
+    setModoDesenho(false);   // após desenhar, volta ao cursor normal (item novo fica selecionado)
   }
 
   function setModoDesenho(on) {
@@ -407,8 +427,10 @@
     alvo.innerHTML = html;
   }
 
-  /* clique adiciona no centro; arrastar solta na posição do ponteiro */
+  /* clicar no cabeçalho recolhe/abre a categoria; nos itens, adiciona */
   $('#paleta').addEventListener('click', evt => {
+    const h = evt.target.closest('h3');
+    if (h && h.parentElement) { h.parentElement.classList.toggle('fechado'); return; }
     const b = evt.target.closest('.ficha-simbolo');
     if (!b) return;
     adicionar(b.dataset.tipo, b.dataset.ref);
@@ -432,6 +454,8 @@
   /* busca */
   $('#busca').addEventListener('input', evt => {
     const q = evt.target.value.trim().toLowerCase();
+    // durante a busca, mostra os itens mesmo em categorias recolhidas
+    $('#paleta').classList.toggle('buscando', !!q);
     $$('#paleta .ficha-simbolo').forEach(b => {
       const nome = b.querySelector('span').textContent.toLowerCase();
       b.hidden = q && !nome.includes(q);

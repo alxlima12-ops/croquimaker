@@ -157,6 +157,20 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Categorias da paleta recolhíveis.** Clicar no cabeçalho abre/fecha a
+  categoria (seta ▾ indica o estado); durante uma busca as recolhidas voltam a
+  mostrar os resultados. Ver `.grupo.fechado` no `css/app.css` e o handler de
+  clique em `h3` no `js/editor.js`.
+- **Texto não rouba mais o clique das linhas.** Um `<text>` é clicável na CAIXA
+  inteira (maior que as letras), e nenhum `pointer-events` restringe isso; então
+  a caixa invisível roubava linhas/símbolos vizinhos. Agora `itemNoPonto` escolhe
+  o alvo: mantém o que já está selecionado (sticky) e, senão, prefere
+  linhas/símbolos a texto. Clicar numa linha pega a linha; texto isolado ainda
+  seleciona normalmente. Resolve o antigo `BACKLOG-1`.
+- **Alça de girar maior + "Desenhar solo" auto-desliga.** O alvo da alça de
+  rotação foi ampliado (some menos o giro por quase-erro). E ao soltar um traço
+  livre, a ferramenta se desmarca sozinha e o cursor volta ao normal (o traço
+  novo fica selecionado para ajustar a rugosidade).
 - **Selecionar ficou fácil (folga de clique).** Símbolos, relevos e traçados são
   linhas com `fill:none`; antes só o traço fino registrava o clique. Agora cada um
   ganha uma cópia invisível `.hit` (traço grosso transparente) que dá ~9 px de
@@ -200,13 +214,7 @@ Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
   cair no elemento de baixo por três pixels de erro.
 
 ### A fazer
-1. **Girar às vezes seleciona o texto de baixo (item 1 — parcial).** O alvo maior
-   das alças reduz o problema, mas a causa de fundo permanece: itens de texto têm
-   caixa de clique grande e disputam o ponteiro. Próximo passo é uma trava de
-   arraste — enquanto uma alça está pega, o `pointermove` ignora qualquer outro
-   alvo — e talvez um modo de "bloquear" itens prontos. Marcado como
-   `BACKLOG-1` em `js/editor.js`, no handler de `pointerdown`.
-2. **Inserção de imagens no croqui (item 5).** Diferente do calque (que é só
+1. **Inserção de imagens no croqui (item 5).** Diferente do calque (que é só
    referência de tela): imagens que entram no croqui final e são exportadas —
    logotipos de equipe, QR codes para Wikiloc, fotos de ancoragem. Vira um novo
    `tipo: 'imagem'` no modelo de itens, com o `src` em data URL. Atenção: isso

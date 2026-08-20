@@ -100,8 +100,10 @@ Versione `versao` ao mudar o formato do estado.
 Ver `README.md` (seção "Backlog — retorno de uso em campo") para o detalhe. Os
 pontos de entrada estão marcados no código — busque por `BACKLOG-`:
 
-- `BACKLOG-1` (`js/editor.js`, `pointerdown`): girar às vezes pega o texto de
-  baixo. Alvos de alça já foram ampliados; falta trava de arraste / bloquear item.
+- `BACKLOG-1` **resolvido**: texto roubava o clique (é clicável na caixa inteira).
+  `itemNoPonto` (em `js/editor.js`, usado no `pointerdown`) escolhe o alvo via
+  `elementsFromPoint`: mantém o selecionado (sticky) e prefere linhas/símbolos a
+  texto. A alça de girar também foi ampliada.
 - `BACKLOG-5` (`js/editor.js`, `markupItem`): novo `tipo:'imagem'` que entra no
   export (logos, QR de Wikiloc, fotos), diferente do calque.
 

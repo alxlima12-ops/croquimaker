@@ -192,7 +192,25 @@ button, input, textarea, select { font: inherit; color: inherit; }
   color: var(--tinta-fraca);
   border-bottom: 1px solid var(--linha);
   padding-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
 }
+.grupo h3:hover { color: var(--tinta); }
+.grupo h3::after {
+  content: '▾';
+  letter-spacing: 0;
+  font-size: 11px;
+  opacity: .65;
+  transition: transform .15s ease;
+}
+.grupo.fechado h3 { margin-bottom: 0; }
+.grupo.fechado h3::after { transform: rotate(-90deg); }
+.grupo.fechado .grade { display: none; }
+#paleta.buscando .grupo.fechado .grade { display: grid; }
 
 .grade {
   display: grid;
