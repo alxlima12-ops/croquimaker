@@ -456,18 +456,33 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
 /* ---------------- Responsivo ---------------- */
 
+/* gavetas de tablet: botões e fundo escuro escondidos no desktop */
+.drawer-toggle { display: none; }
+#drawer-backdrop { position: absolute; inset: 0; z-index: 45; background: rgba(0, 0, 0, .45); }
+#folha { touch-action: none; }   /* toque na folha = manipular/gestos, não rolar a página */
+
 @media (max-width: 1180px) {
   .area { grid-template-columns: 250px minmax(0, 1fr) 280px; }
   .barra-mesa .dica { display: none; }
 }
 
-@media (max-width: 940px) {
-  body { overflow: auto; }
-  .area { display: block; }
-  .coluna, #mesa { height: auto; }
-  .coluna-esq, .coluna-dir { border: 0; border-top: 1px solid var(--linha); }
-  .rolavel { max-height: 60vh; }
-  .rolagem { padding: 14px; }
+/* tablet e telas estreitas: canvas ocupa tudo; paleta e painéis viram gavetas
+   que deslizam sobre o canvas, abertas pelos botões da barra e fechadas pelo fundo */
+@media (max-width: 1024px) {
+  .area { grid-template-columns: 1fr; position: relative; }
+  .drawer-toggle { display: inline-flex; align-items: center; }
+  .coluna {
+    position: absolute; top: 0; bottom: 0;
+    width: min(86vw, 330px);
+    z-index: 50;
+    box-shadow: 0 8px 34px rgba(0, 0, 0, .55);
+    transition: transform .22s ease;
+  }
+  .coluna-esq { left: 0; transform: translateX(-101%); }
+  .coluna-dir { right: 0; transform: translateX(101%); }
+  .coluna-esq.aberta, .coluna-dir.aberta { transform: translateX(0); }
+  .barra-mesa { flex-wrap: wrap; }
+  .barra-mesa button, .topo button { padding: 9px 13px; }
   .topo { height: auto; flex-wrap: wrap; padding: 10px 12px; gap: 10px; }
 }
 

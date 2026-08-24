@@ -149,14 +149,21 @@ Em ordem do que eu atacaria primeiro:
 8. **Conferência da simbologia.** Os SVGs foram redesenhados a partir das figuras
    do PDF, não são os arquivos originais. Antes de qualquer publicação, vale
    passar símbolo a símbolo com quem mantém o padrão.
-9. **Acessibilidade e toque.** O editor responde a ponteiro, mas ainda não foi
-   testado a sério em tablet, que é onde o croquista provavelmente vai usar.
+9. **Acessibilidade e toque.** Já há suporte a tablet (gestos de pinça/pan e
+   gavetas — ver "Feito nesta rodada"). Falta validar num tablet físico de campo
+   e melhorar acessibilidade por teclado/leitor de tela.
 
 ## Backlog — retorno de uso em campo
 
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Suporte a tablet (toque + gestos + gavetas).** O foco é desktop + tablet
+  (celular só para ver/compartilhar, não editar). Pinça = zoom, dois dedos =
+  arrastar a folha (`pointers`/`gesto` no `js/editor.js`, `touch-action:none` na
+  folha). Em telas ≤1024px a paleta e os painéis viram **gavetas** que deslizam
+  sobre o canvas (botões "☰ Símbolos" / "Editar ⚙"; fundo escuro fecha). Uma
+  rede de segurança no `window` limpa ponteiros perdidos. Desktop inalterado.
 - **Categorias da paleta recolhíveis.** Clicar no cabeçalho abre/fecha a
   categoria (seta ▾ indica o estado); durante uma busca as recolhidas voltam a
   mostrar os resultados. Ver `.grupo.fechado` no `css/app.css` e o handler de

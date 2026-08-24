@@ -37,6 +37,8 @@
 
 <main class="area">
 
+  <div id="drawer-backdrop" hidden></div>
+
   <aside class="coluna coluna-esq">
     <div class="cabeca-coluna">
       <h2>Paleta</h2>
@@ -49,6 +51,7 @@
 
   <section id="mesa">
     <div class="barra-mesa">
+      <button id="bt-drawer-esq" class="drawer-toggle" type="button" aria-pressed="false">☰ Símbolos</button>
       <button id="bt-texto" type="button">Inserir texto</button>
       <button id="bt-tracado" type="button" aria-pressed="false" title="Desenhe uma linha de solo ou parede à mão livre">Desenhar solo</button>
       <span class="divisor" aria-hidden="true"></span>
@@ -56,6 +59,7 @@
       <span id="zoom-valor" class="mono">100%</span>
       <button id="zoom-mais" type="button" aria-label="Aumentar zoom">+</button>
       <button id="zoom-ajustar" type="button">Ajustar à tela</button>
+      <button id="bt-drawer-dir" class="drawer-toggle" type="button" aria-pressed="false">Editar ⚙</button>
       <span class="dica">Arraste para mover · alça superior gira · canto inferior direito redimensiona · Delete apaga · <b>Desenhar solo</b>: puxe a linha e solte (Esc sai)</span>
     </div>
 

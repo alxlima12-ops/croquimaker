@@ -214,6 +214,21 @@
 
   const polyD = pts => 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L');
 
+  /* ---- Gestos de toque: pinça = zoom, dois dedos = arrastar a folha ---- */
+  const rolagem = document.querySelector('.rolagem');
+  const pointers = new Map();   // pointerId -> {x,y} em coords de tela
+  let gesto = null;             // pinça/pan de dois dedos em curso
+
+  function doisDedos() {
+    const v = [...pointers.values()];
+    const r = rolagem.getBoundingClientRect();
+    return {
+      x: (v[0].x + v[1].x) / 2 - r.left,   // ponto médio, dentro da área de rolagem
+      y: (v[0].y + v[1].y) / 2 - r.top,
+      dist: Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y)
+    };
+  }
+
   /** Escolhe qual item pegar quando vários se sobrepõem no ponto do clique.
       Um texto captura o clique na CAIXA inteira (maior que as letras) e roubava
       linhas/símbolos vizinhos. Regra: 1) mantém o que já está selecionado se
@@ -237,6 +252,21 @@
   }
 
   svg.addEventListener('pointerdown', evt => {
+    pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
+    if (pointers.size === 2) {                 // dois dedos: inicia pinça/pan
+      arraste = null;                          // cancela arraste iniciado pelo 1º dedo
+      if (desenhando) { camUI.innerHTML = ''; desenhando = null; }
+      const m = doisDedos();
+      gesto = {
+        z0: zoom, d0: m.dist || 1,
+        ancoraX: (rolagem.scrollLeft + m.x) / zoom,
+        ancoraY: (rolagem.scrollTop + m.y) / zoom
+      };
+      try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
+      return;
+    }
+    if (pointers.size > 2) return;
+
     const p = paraSVG(evt);
 
     // modo de desenho livre: começa a capturar o traço, ignora seleção
@@ -274,6 +304,14 @@
   });
 
   svg.addEventListener('pointermove', evt => {
+    if (pointers.has(evt.pointerId)) pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
+    if (gesto && pointers.size >= 2) {         // pinça = zoom + pan ancorado nos dedos
+      const m = doisDedos();
+      aplicarZoom(gesto.z0 * (m.dist / gesto.d0));
+      rolagem.scrollLeft = gesto.ancoraX * zoom - m.x;
+      rolagem.scrollTop = gesto.ancoraY * zoom - m.y;
+      return;
+    }
     if (desenhando) {
       const p = paraSVG(evt);
       const last = desenhando.pts[desenhando.pts.length - 1];
@@ -311,9 +349,19 @@
   }
 
   ['pointerup', 'pointercancel'].forEach(ev =>
-    svg.addEventListener(ev, () => {
+    svg.addEventListener(ev, evt => {
+      pointers.delete(evt.pointerId);
+      if (gesto) { if (pointers.size < 2) gesto = null; return; }
       arraste = null;
       if (desenhando) { finalizarTracado(desenhando.pts); desenhando = null; }
+    }));
+
+  // rede de segurança: se um ponteiro terminar fora do svg, ainda limpa o mapa
+  // (senão um pointerup perdido deixaria o gesto travado — um toque viraria "2 dedos")
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev =>
+    window.addEventListener(ev, evt => {
+      pointers.delete(evt.pointerId);
+      if (pointers.size < 2) gesto = null;
     }));
 
   /** Fecha um traço livre: torna os pontos locais e cria o item 'tracado'. */
@@ -948,6 +996,35 @@
     $$('.aba').forEach(b => b.setAttribute('aria-selected', b === bt));
     $$('.painel').forEach(p => p.hidden = p.id !== bt.dataset.painel);
   }));
+
+  /* ---------------- Gavetas (tablet): paleta e painéis deslizantes ---------------- */
+
+  const colEsq = $('.coluna-esq'), colDir = $('.coluna-dir'), backdrop = $('#drawer-backdrop');
+
+  function fecharGavetas() {
+    colEsq.classList.remove('aberta');
+    colDir.classList.remove('aberta');
+    backdrop.hidden = true;
+    $('#bt-drawer-esq').setAttribute('aria-pressed', 'false');
+    $('#bt-drawer-dir').setAttribute('aria-pressed', 'false');
+  }
+  function abrirGaveta(qual) {
+    const alvo = qual === 'esq' ? colEsq : colDir;
+    const jaAberta = alvo.classList.contains('aberta');
+    fecharGavetas();
+    if (!jaAberta) {
+      alvo.classList.add('aberta');
+      backdrop.hidden = false;
+      $(qual === 'esq' ? '#bt-drawer-esq' : '#bt-drawer-dir').setAttribute('aria-pressed', 'true');
+    }
+  }
+  $('#bt-drawer-esq').addEventListener('click', () => abrirGaveta('esq'));
+  $('#bt-drawer-dir').addEventListener('click', () => abrirGaveta('dir'));
+  backdrop.addEventListener('click', fecharGavetas);
+  // escolher um símbolo/relevo na paleta fecha a gaveta (fluxo de toque)
+  $('#paleta').addEventListener('click', evt => {
+    if (evt.target.closest('.ficha-simbolo')) fecharGavetas();
+  });
 
   /* ---------------- Início ---------------- */
 

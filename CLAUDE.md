@@ -63,6 +63,12 @@ string num canvas; PDF usa `window.print()` com `#estilo-impressao` (gerado em
   "não funcionar"). `selecionar()` já chama isso na hora certa.
 - `sincronizarInspetor(it)` espelha valores no painel sem remontá-lo (arraste).
 
+Toque/tablet: `pointers` (Map) rastreia dedos; 2 dedos entram em `gesto` (pinça =
+zoom, pan ancorado). `touch-action:none` na `#folha`. Um pointerup perdido vazaria
+o mapa e travaria (toque viraria "2 dedos") — por isso há limpeza também no
+`window`. Em ≤1024px a paleta/painéis viram gavetas (`.coluna.aberta`, botões
+`#bt-drawer-esq/dir`, `#drawer-backdrop`). Alvo de dispositivos: desktop + tablet.
+
 Cada símbolo/relevo/traçado é desenhado **duas vezes** em `mioloItem`: uma cópia
 `.hit` (traço grosso transparente, `pointer-events:stroke`) só para dar folga de
 clique ao redor da linha fina, e a cópia visível. `getBBox` ignora o traço, então
