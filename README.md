@@ -158,6 +158,9 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Categorias da paleta fechadas por padrão** (o usuário abre a que quer) e
+  **arrastar no canvas não seleciona mais o texto da folha** (`user-select:none`
+  na `#folha`). Texto do tour "Painéis" mais completo no desktop.
 - **Correção do travamento (crítico).** Um toque "fantasma" (pointerup de toque
   perdido — palma na tela de um laptop) fazia todo clique de mouse virar "2 dedos"
   e travava seleção/arraste/giro/escala/along. Agora gestos de dois dedos valem

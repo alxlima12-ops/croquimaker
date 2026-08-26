@@ -498,7 +498,7 @@
     let html = '';
     window.CATEGORIAS.forEach(cat => {
       const itens = window.SIMBOLOS.filter(s => s.cat === cat.id);
-      html += `<section class="grupo" data-cat="${cat.id}"><h3>${cat.nome}</h3><div class="grade">`;
+      html += `<section class="grupo fechado" data-cat="${cat.id}"><h3>${cat.nome}</h3><div class="grade">`;
       itens.forEach(s => {
         html += `<button class="ficha-simbolo${s.risco ? ' risco' : ''}" draggable="true"
                    data-tipo="simbolo" data-ref="${s.id}" title="${esc(s.nome)}${s.risco ? ' — item de risco, entra na legenda' : ''}">
@@ -511,7 +511,7 @@
     const rel = window.RELEVOS.catalogo();
     const grupos = [...new Set(rel.map(r => r.grupo))];
     grupos.forEach(gr => {
-      html += `<section class="grupo" data-cat="relevo"><h3>${gr}</h3><div class="grade grade-relevo">`;
+      html += `<section class="grupo fechado" data-cat="relevo"><h3>${gr}</h3><div class="grade grade-relevo">`;
       rel.filter(r => r.grupo === gr).forEach(r => {
         const corpo = window.RELEVOS.desenhar({ ref: r.ref, seed: 7 });
         html += `<button class="ficha-simbolo" draggable="true" data-tipo="relevo" data-ref="${r.ref}" title="${esc(r.nome)}">
@@ -1126,7 +1126,7 @@
   const tour = $('#tour');
   const REGIOES = {
     paleta: '<b>Paleta</b> — todos os símbolos da CBC, por categoria. Clique para inserir no centro da folha, ou arraste até o ponto exato.',
-    paineis: '<b>Painéis</b> — em <b>Item</b> você edita o selecionado; em <b>Folha</b> muda o tamanho e o título; em <b>Ficha</b> as informações mínimas; ainda há <b>Risco</b> e <b>Calque</b>.',
+    paineis: '<b>Painéis</b> — tudo à direita, em abas. <b>Item</b>: edita o que está selecionado (tamanho, rotação, alongamento, rótulo, ordem, espelhar, excluir). <b>Folha</b>: formato, título, autoria e observações. <b>Ficha</b>: os 14 campos das informações mínimas. <b>Risco</b>: a legenda dos itens de risco, montada sozinha. <b>Calque</b>: uma imagem de referência atrás da folha.',
     ferramentas: '<b>Inserir texto</b> e <b>Desenhar solo</b> — o "solo" é à mão livre: trace do jeito que quiser e ele vira um item editável.',
     menu: '<b>Menu</b> — Nova folha, Carregar exemplo, Salvar o projeto e Exportar em PNG, PDF ou SVG.'
   };

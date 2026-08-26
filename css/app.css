@@ -459,7 +459,11 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* gavetas de tablet: botões e fundo escuro escondidos no desktop */
 .drawer-toggle { display: none; }
 #drawer-backdrop { position: absolute; inset: 0; z-index: 45; background: rgba(0, 0, 0, .45); }
-#folha { touch-action: none; }   /* toque na folha = manipular/gestos, não rolar a página */
+#folha {
+  touch-action: none;              /* toque na folha = manipular/gestos, não rolar a página */
+  user-select: none;               /* arrastar no canvas não seleciona o texto da folha */
+  -webkit-user-select: none;
+}
 
 @media (max-width: 1180px) {
   .area { grid-template-columns: 250px minmax(0, 1fr) 280px; }
@@ -588,6 +592,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   box-shadow: 0 10px 34px rgba(0, 0, 0, .55);
   font-size: 13px; line-height: 1.5; color: var(--tinta);
 }
+.tour-callout[data-reg="paineis"] { width: min(340px, 82vw); }
 .tour-callout p { margin: 0; }
 .tour-callout b { color: var(--agua); }
 .tour-barra {
