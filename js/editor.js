@@ -168,20 +168,22 @@
       `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="8"/>` +
       `<rect class="alca" data-alca="escalar" x="${escP.x - 6}" y="${escP.y - 6}" width="12" height="12"/>`;
 
-    // alça de ALONGAMENTO: só nos símbolos de progressão alongáveis. Fica na base
-    // (meio de baixo), projetada para fora, no eixo em que o item estica.
+    // alça de ALONGAMENTO: só nos símbolos de progressão alongáveis. Fica no meio
+    // da lateral ESQUERDA (longe da alça de escala, que é no canto), como uma
+    // setinha que aponta no eixo em que o item estica — puxar para baixo alonga.
     const it = itemSel();
     const s = it && it.tipo === 'simbolo' ? window.SIMBOLO_POR_ID[it.ref] : null;
     if (s && s.alongavel) {
-      const botC = { x: (c[2].x + c[3].x) / 2, y: (c[2].y + c[3].y) / 2 };
-      const topC = { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 };
-      let bvx = botC.x - topC.x, bvy = botC.y - topC.y;
-      const bl = Math.hypot(bvx, bvy) || 1;
-      const aP = { x: botC.x + (bvx / bl) * 18, y: botC.y + (bvy / bl) * 18 };
+      const leftC = { x: (c[0].x + c[3].x) / 2, y: (c[0].y + c[3].y) / 2 };
+      let lvx = leftC.x - cx, lvy = leftC.y - cy;
+      const ll = Math.hypot(lvx, lvy) || 1;
+      const aP = { x: leftC.x + (lvx / ll) * 18, y: leftC.y + (lvy / ll) * 18 };
       html +=
-        `<line class="sel-caixa" x1="${botC.x}" y1="${botC.y}" x2="${aP.x}" y2="${aP.y}"/>` +
-        `<circle class="alca-alvo" data-alca="alongar" cx="${aP.x}" cy="${aP.y}" r="15"/>` +
-        `<circle class="alca alca-along" data-alca="alongar" cx="${aP.x}" cy="${aP.y}" r="8"/>`;
+        `<g transform="translate(${aP.x.toFixed(1)},${aP.y.toFixed(1)}) rotate(${(it.rot || 0).toFixed(1)})">` +
+          `<circle class="alca-alvo" data-alca="alongar" cx="0" cy="0" r="16"/>` +
+          `<circle class="alca-along-bg" data-alca="alongar" cx="0" cy="0" r="9"/>` +
+          `<path class="alca-along-seta" d="M0 -4.5 V3.5 M-3.4 0 L0 4.6 L3.4 0"/>` +
+        `</g>`;
     }
 
     camUI.innerHTML = html;
@@ -272,20 +274,29 @@
   }
 
   svg.addEventListener('pointerdown', evt => {
-    pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
-    if (pointers.size === 2) {                 // dois dedos: inicia pinça/pan
-      arraste = null;                          // cancela arraste iniciado pelo 1º dedo
-      if (desenhando) { camUI.innerHTML = ''; desenhando = null; }
-      const m = doisDedos();
-      gesto = {
-        z0: zoom, d0: m.dist || 1,
-        ancoraX: (rolagem.scrollLeft + m.x) / zoom,
-        ancoraY: (rolagem.scrollTop + m.y) / zoom
-      };
-      try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
-      return;
+    // Gestos de dois dedos valem SÓ para toque. Mouse/caneta nunca entram nesse
+    // caminho e ainda limpam qualquer toque "fantasma" (um pointerup de toque que
+    // se perdeu — palma na tela, etc.). Sem isso, um toque fantasma fazia todo
+    // clique de mouse virar "2 dedos" e travava seleção/arraste/giro/escala/along.
+    if (evt.pointerType === 'touch') {
+      pointers.set(evt.pointerId, { x: evt.clientX, y: evt.clientY });
+      if (pointers.size === 2) {               // dois dedos: inicia pinça/pan
+        arraste = null;                        // cancela arraste iniciado pelo 1º dedo
+        if (desenhando) { camUI.innerHTML = ''; desenhando = null; }
+        const m = doisDedos();
+        gesto = {
+          z0: zoom, d0: m.dist || 1,
+          ancoraX: (rolagem.scrollLeft + m.x) / zoom,
+          ancoraY: (rolagem.scrollTop + m.y) / zoom
+        };
+        try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
+        return;
+      }
+      if (pointers.size > 2) return;
+    } else {
+      pointers.clear();
+      gesto = null;
     }
-    if (pointers.size > 2) return;
 
     const p = paraSVG(evt);
 
@@ -1065,23 +1076,12 @@
     if (evt.target.closest('.ficha-simbolo')) fecharGavetas();
   });
 
-  /* ---------------- Modal de início: novo projeto + tutorial ---------------- */
+  /* ---------------- Modal de início: novo projeto + tour anotado ---------------- */
 
   const DIMS_BASE = { a4: [297, 210], a3: [420, 297], a2: [594, 420], carta: [279, 216] };
 
-  const TUTORIAL = [
-    { t: 'A paleta de símbolos', p: 'À esquerda ficam os símbolos da CBC, por categoria. Clique para inserir no centro da folha, ou arraste até o ponto exato. As categorias abrem e fecham no título.',
-      svg: `<rect x="12" y="14" width="20" height="20" rx="3"/><rect x="40" y="14" width="20" height="20" rx="3"/><rect x="68" y="14" width="20" height="20" rx="3"/><rect x="12" y="44" width="20" height="20" rx="3"/><rect x="40" y="44" width="20" height="20" rx="3"/><rect x="68" y="44" width="20" height="20" rx="3"/>` },
-    { t: 'Editar um item', p: 'Clique num item para selecioná-lo e arraste para mover. As alças giram (em cima), redimensionam (canto) e — nos rapéis e saltos — alongam (embaixo). Setas do teclado ajustam fino; Delete apaga.',
-      svg: `<rect x="30" y="24" width="40" height="34" fill="none" stroke-dasharray="5 3"/><circle cx="50" cy="14" r="5" fill="currentColor" stroke="none"/><rect x="65" y="53" width="10" height="10" fill="currentColor" stroke="none"/><circle cx="50" cy="68" r="5" fill="currentColor" stroke="none"/>` },
-    { t: 'Desenhar o solo', p: 'Precisa da linha do chão ou das paredes? Toque em "Desenhar solo", trace à mão e solte — vira uma linha no estilo do croqui, com rugosidade ajustável no painel.',
-      svg: `<path d="M6 42 q12 -13 24 0 q12 13 24 0 q12 -13 24 0 q6 6 10 2" fill="none"/>` },
-    { t: 'Ficha e exportação', p: 'Preencha a ficha de informações mínimas — a legenda de itens de risco se monta sozinha. Exporte em PNG, PDF ou SVG, ou salve o projeto (.json) para reabrir e continuar depois.',
-      svg: `<path d="M50 10 V50" fill="none"/><path d="M35 37 L50 52 L65 37" fill="none"/><path d="M20 60 H80" fill="none"/>` }
-  ];
-
   const modal = $('#modal-inicio');
-  let baseSel = 'a4', orientSel = 'paisagem', tutIndex = 0, modalModo = 'completo';
+  let baseSel = 'a4', orientSel = 'paisagem', modalModo = 'completo';
 
   function dimsEscolhidas() {
     const [x, y] = DIMS_BASE[baseSel];
@@ -1094,23 +1094,20 @@
   }
   function mostrarEtapa(nome) {
     modal.querySelectorAll('.modal-etapa').forEach(e => { e.hidden = e.dataset.etapa !== nome; });
+    modal.classList.toggle('etapa-folha', nome === 'folha');
   }
-  function renderTutorial() {
-    const s = TUTORIAL[tutIndex];
-    $('#tut-slides').innerHTML =
-      `<div class="tut-slide"><div class="tut-icone"><svg viewBox="0 0 100 78" aria-hidden="true">${s.svg}</svg></div>` +
-      `<h3>${esc(s.t)}</h3><p>${esc(s.p)}</p></div>`;
-    $('#tut-pontos').innerHTML = TUTORIAL.map((_, i) => `<span class="${i === tutIndex ? 'ativo' : ''}"></span>`).join('');
-    $('#tut-proximo').textContent = tutIndex === TUTORIAL.length - 1 ? 'Começar a desenhar' : 'Próximo →';
-    $('#tut-voltar').textContent = tutIndex === 0 && modalModo !== 'tutorial' ? '← Folha' : '← Voltar';
-  }
-  function aplicarFolhaEscolhida() {
+  // aplica o formato AO VIVO enquanto o usuário escolhe, para a folha atrás do
+  // modal já mudar de tamanho como uma prévia
+  function previewFolha() {
     const [L, A] = dimsEscolhidas();
-    const titulo = $('#modal-titulo-in').value.trim();
-    if (titulo) estado.meta.titulo = titulo;
     trocarFormato(`${baseSel}-${orientSel}`, L, A, false);
     montarPainelFolha();
     desenhar();
+  }
+  function aplicarFolhaEscolhida() {
+    previewFolha();
+    const titulo = $('#modal-titulo-in').value.trim();
+    if (titulo) { estado.meta.titulo = titulo; montarPainelFolha(); desenhar(); }
   }
   function abrirModal(modo) {
     modalModo = modo || 'completo';
@@ -1118,41 +1115,86 @@
     $$('#modal-formatos button').forEach(x => x.classList.toggle('ativo', x.dataset.base === 'a4'));
     $$('#modal-orient button').forEach(x => x.classList.toggle('ativo', x.dataset.orient === 'paisagem'));
     modal.hidden = false;
-    if (modo === 'tutorial') { mostrarEtapa('tutorial'); tutIndex = 0; renderTutorial(); }
-    else { mostrarEtapa('folha'); atualizarResultado(); }
+    mostrarEtapa('folha'); atualizarResultado(); previewFolha();
   }
   function fecharModal() {
     modal.hidden = true;
     try { localStorage.setItem('croqui_visto', '1'); } catch (_) {}
   }
 
+  /* ---- Tour anotado: rótulos apontando cada região da ferramenta ---- */
+  const tour = $('#tour');
+  const REGIOES = {
+    paleta: '<b>Paleta</b> — todos os símbolos da CBC, por categoria. Clique para inserir no centro da folha, ou arraste até o ponto exato.',
+    paineis: '<b>Painéis</b> — em <b>Item</b> você edita o selecionado; em <b>Folha</b> muda o tamanho e o título; em <b>Ficha</b> as informações mínimas; ainda há <b>Risco</b> e <b>Calque</b>.',
+    ferramentas: '<b>Inserir texto</b> e <b>Desenhar solo</b> — o "solo" é à mão livre: trace do jeito que quiser e ele vira um item editável.',
+    menu: '<b>Menu</b> — Nova folha, Carregar exemplo, Salvar o projeto e Exportar em PNG, PDF ou SVG.'
+  };
+  function retanguloRegiao(reg) {
+    const gaveta = window.innerWidth <= 1024;
+    let el;
+    if (reg === 'paleta') el = gaveta ? $('#bt-drawer-esq') : $('.coluna-esq');
+    else if (reg === 'paineis') el = gaveta ? $('#bt-drawer-dir') : $('.coluna-dir');
+    else if (reg === 'ferramentas') el = $('.barra-mesa');
+    else el = $('.acoes');
+    return el ? el.getBoundingClientRect() : null;
+  }
+  function posicionarTour() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    tour.querySelectorAll('.tour-ring').forEach(ring => {
+      const r = retanguloRegiao(ring.dataset.reg); if (!r) { ring.hidden = true; return; }
+      ring.hidden = false;
+      ring.style.left = r.left + 'px'; ring.style.top = r.top + 'px';
+      ring.style.width = r.width + 'px'; ring.style.height = r.height + 'px';
+    });
+    tour.querySelectorAll('.tour-callout').forEach(cal => {
+      const reg = cal.dataset.reg, r = retanguloRegiao(reg); if (!r) { cal.hidden = true; return; }
+      cal.hidden = false;
+      const cw = cal.offsetWidth, ch = cal.offsetHeight;
+      let left, top;
+      if (reg === 'paleta') { left = r.right + 14; top = r.top + Math.min(340, Math.max(20, r.height - 150)); }
+      else if (reg === 'paineis') { left = r.left - cw - 14; top = r.top + Math.min(260, Math.max(20, r.height * 0.4)); }
+      else if (reg === 'ferramentas') { left = r.left + 20; top = r.bottom + 14; }
+      else { left = r.right - cw; top = r.bottom + 12; }
+      left = Math.max(10, Math.min(left, vw - cw - 10));
+      top = Math.max(10, Math.min(top, vh - ch - 84));
+      cal.style.left = left + 'px'; cal.style.top = top + 'px';
+    });
+  }
+  function abrirTour() {
+    Object.keys(REGIOES).forEach(reg => {
+      const cal = tour.querySelector(`.tour-callout[data-reg="${reg}"] p`);
+      if (cal) cal.innerHTML = REGIOES[reg];
+    });
+    tour.hidden = false;
+    posicionarTour();
+  }
+  function fecharTour() {
+    tour.hidden = true;
+    try { localStorage.setItem('croqui_visto', '1'); } catch (_) {}
+  }
+  $('#tour-ok').addEventListener('click', fecharTour);
+  window.addEventListener('resize', () => { if (!tour.hidden) posicionarTour(); });
+
   $('#modal-formatos').addEventListener('click', e => {
     const b = e.target.closest('button[data-base]'); if (!b) return;
     baseSel = b.dataset.base;
     $$('#modal-formatos button').forEach(x => x.classList.toggle('ativo', x === b));
-    atualizarResultado();
+    atualizarResultado(); previewFolha();
   });
   $('#modal-orient').addEventListener('click', e => {
     const b = e.target.closest('button[data-orient]'); if (!b) return;
     orientSel = b.dataset.orient;
     $$('#modal-orient button').forEach(x => x.classList.toggle('ativo', x === b));
-    atualizarResultado();
+    atualizarResultado(); previewFolha();
   });
   $('#modal-avancar').addEventListener('click', () => {
     aplicarFolhaEscolhida();
-    if (modalModo === 'folha') fecharModal();
-    else { mostrarEtapa('tutorial'); tutIndex = 0; renderTutorial(); }
+    fecharModal();
+    if (modalModo !== 'folha') abrirTour();   // 1ª visita: mostra o tour depois de escolher a folha
   });
   $('#modal-exemplo').addEventListener('click', () => { fecharModal(); carregarExemplo(); });
-  $('#tut-proximo').addEventListener('click', () => {
-    if (tutIndex === TUTORIAL.length - 1) fecharModal();
-    else { tutIndex++; renderTutorial(); }
-  });
-  $('#tut-voltar').addEventListener('click', () => {
-    if (tutIndex === 0) { if (modalModo === 'tutorial') fecharModal(); else mostrarEtapa('folha'); }
-    else { tutIndex--; renderTutorial(); }
-  });
-  $('#bt-ajuda').addEventListener('click', () => abrirModal('tutorial'));
+  $('#bt-ajuda').addEventListener('click', abrirTour);
 
   /* ---------------- Início ---------------- */
 

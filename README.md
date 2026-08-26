@@ -158,6 +158,19 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Correção do travamento (crítico).** Um toque "fantasma" (pointerup de toque
+  perdido — palma na tela de um laptop) fazia todo clique de mouse virar "2 dedos"
+  e travava seleção/arraste/giro/escala/along. Agora gestos de dois dedos valem
+  SÓ para toque; mouse/caneta nunca entram nesse caminho e limpam ponteiros
+  fantasmas a cada clique. Ver `pointerType === 'touch'` no `pointerdown`.
+- **Prévia da folha ao vivo.** No modal de novo projeto, trocar formato/orientação
+  já muda a folha atrás (o cartão encosta à esquerda para deixar ver). `previewFolha`.
+- **Tour anotado no lugar do passo-a-passo.** Ao abrir (ou no "?"), rótulos
+  apontam cada região de uma vez — paleta, painéis, ferramentas (texto/desenhar
+  solo) e menu — sem clicar por slides. Ver `#tour`, `posicionarTour`, `REGIOES`.
+- **Alça de alongar movida para a lateral.** Virou uma setinha no meio da lateral
+  esquerda (longe da alça de escala, que encavalava), apontando o eixo em que
+  estica. Ver `data-alca="alongar"` em `desenharSelecao`.
 - **Tela de início (novo projeto + tutorial).** Na primeira visita abre um modal
   para escolher o formato da folha (A4/A3/A2/carta + orientação, com título
   opcional) e, na sequência, 3–4 passos de como usar. Fica guardado em

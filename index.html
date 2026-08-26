@@ -82,7 +82,8 @@
             .item { cursor:move; }
             .sel-caixa { fill:none; stroke:#12908d; stroke-width:1.2; stroke-dasharray:6 4; }
             .alca { fill:#fff; stroke:#12908d; stroke-width:1.6; cursor:pointer; }
-            .alca-along { fill:#12908d; stroke:#fff; cursor:ns-resize; }
+            .alca-along-bg { fill:#12908d; stroke:#fff; stroke-width:1.4; cursor:ns-resize; }
+            .alca-along-seta { fill:none; stroke:#fff; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
             .alca-alvo { fill:transparent; stroke:none; pointer-events:all; cursor:pointer; }
           </style>
 
@@ -176,16 +177,21 @@
       </div>
     </div>
 
-    <div class="modal-etapa" data-etapa="tutorial" hidden>
-      <div id="tut-slides"></div>
-      <div class="tut-nav">
-        <div class="tut-pontos" id="tut-pontos" aria-hidden="true"></div>
-        <div class="modal-acoes">
-          <button id="tut-voltar" class="secundario" type="button">← Voltar</button>
-          <button id="tut-proximo" class="destaque" type="button">Próximo →</button>
-        </div>
-      </div>
-    </div>
+  </div>
+</div>
+
+<div id="tour" class="tour" hidden>
+  <div class="tour-ring" data-reg="paleta"></div>
+  <div class="tour-ring" data-reg="paineis"></div>
+  <div class="tour-ring" data-reg="ferramentas"></div>
+  <div class="tour-ring" data-reg="menu"></div>
+  <div class="tour-callout" data-reg="paleta"><p></p></div>
+  <div class="tour-callout" data-reg="paineis"><p></p></div>
+  <div class="tour-callout" data-reg="ferramentas"><p></p></div>
+  <div class="tour-callout" data-reg="menu"><p></p></div>
+  <div class="tour-barra">
+    <span>Um tour rápido pela ferramenta</span>
+    <button id="tour-ok" type="button">Entendi, começar →</button>
   </div>
 </div>
 

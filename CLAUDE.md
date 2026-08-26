@@ -69,9 +69,10 @@ Início: na 1ª visita (`localStorage` `croqui_visto`) abre `#modal-inicio` — 
 Alongar no item: alça `data-alca="alongar"` na base, arrasto projetado no eixo
 local do item (÷esc, ÷zoom via paraSVG) → `comprimento`; `redesenharMiolo` (muda o
 traçado). Toque/tablet: `pointers` (Map) rastreia dedos; 2 dedos entram em `gesto` (pinça =
-zoom, pan ancorado). `touch-action:none` na `#folha`. Um pointerup perdido vazaria
-o mapa e travaria (toque viraria "2 dedos") — por isso há limpeza também no
-`window`. Em ≤1024px a paleta/painéis viram gavetas (`.coluna.aberta`, botões
+zoom, pan ancorado). **Gestos só valem para `pointerType==='touch'`**; mouse/caneta
+nunca entram e ainda dão `pointers.clear()` a cada `pointerdown` — sem isso, um
+toque fantasma (pointerup perdido, palma na tela) travava TUDO no mouse. Também há
+limpeza no `window`. `touch-action:none` na `#folha`. Em ≤1024px a paleta/painéis viram gavetas (`.coluna.aberta`, botões
 `#bt-drawer-esq/dir`, `#drawer-backdrop`). Alvo de dispositivos: desktop + tablet.
 
 Cada símbolo/relevo/traçado é desenhado **duas vezes** em `mioloItem`: uma cópia

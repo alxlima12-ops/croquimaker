@@ -512,9 +512,11 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .modal {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
-  padding: 20px; background: rgba(9, 12, 14, .74);
+  padding: 20px; background: rgba(9, 12, 14, .55);
 }
 .modal[hidden] { display: none; }
+/* no passo "folha", o cartão encosta à esquerda para deixar a prévia da folha à mostra */
+.modal.etapa-folha { justify-content: flex-start; }
 .modal-cartao {
   width: min(94vw, 470px); max-height: 92vh; overflow-y: auto;
   background: var(--grafite-800); border: 1px solid var(--linha);
@@ -569,6 +571,37 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .tut-pontos { display: flex; gap: 7px; justify-content: center; }
 .tut-pontos span { width: 8px; height: 8px; border-radius: 50%; background: var(--grafite-600); }
 .tut-pontos span.ativo { background: var(--agua); }
+
+/* ---------------- Tour anotado ---------------- */
+
+.tour { position: fixed; inset: 0; z-index: 110; background: rgba(9, 12, 14, .5); }
+.tour[hidden] { display: none; }
+.tour-ring {
+  position: fixed; border: 2px solid var(--agua); border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(22, 168, 162, .25); pointer-events: none;
+}
+.tour-ring[hidden], .tour-callout[hidden] { display: none; }
+.tour-callout {
+  position: fixed; width: min(280px, 74vw);
+  background: var(--grafite-800); border: 1px solid var(--agua);
+  border-radius: 10px; padding: 12px 14px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .55);
+  font-size: 13px; line-height: 1.5; color: var(--tinta);
+}
+.tour-callout p { margin: 0; }
+.tour-callout b { color: var(--agua); }
+.tour-barra {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center;
+  background: var(--grafite-900); border: 1px solid var(--linha);
+  border-radius: 10px; padding: 10px 16px; box-shadow: 0 10px 34px rgba(0, 0, 0, .55);
+}
+.tour-barra span { color: var(--tinta-fraca); font-size: 13px; }
+.tour-barra button {
+  padding: 10px 18px; border-radius: var(--r); cursor: pointer; font-weight: 600;
+  border: 1px solid var(--tinta); background: var(--tinta); color: var(--grafite-900);
+}
+.tour-barra button:hover { background: #fff; }
 
 /* ---------------- Impressão / PDF ---------------- */
 
