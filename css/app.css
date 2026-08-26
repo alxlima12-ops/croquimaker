@@ -505,6 +505,71 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 .largo:hover { background: var(--grafite-600); }
 
+/* ---------------- Modal de início (novo projeto + tutorial) ---------------- */
+
+#bt-ajuda { width: 34px; padding: 7px 0; text-align: center; font-weight: 700; font-size: 15px; }
+
+.modal {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(9, 12, 14, .74);
+}
+.modal[hidden] { display: none; }
+.modal-cartao {
+  width: min(94vw, 470px); max-height: 92vh; overflow-y: auto;
+  background: var(--grafite-800); border: 1px solid var(--linha);
+  border-radius: 12px; padding: 26px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
+  animation: entra .2s ease-out;
+}
+.modal-cartao h2 { margin: 0 0 4px; font-family: var(--display); font-size: 25px; }
+.modal-sub { margin: 0; color: var(--tinta-fraca); font-size: 13px; line-height: 1.5; }
+.modal-rot {
+  display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--tinta-fraca); margin: 18px 0 7px;
+}
+.modal-grade-fmt { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.modal-orient { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.modal-grade-fmt button, .modal-orient button {
+  padding: 12px 6px; background: var(--grafite-700); border: 1px solid var(--linha);
+  border-radius: var(--r); color: var(--tinta); font-weight: 600; cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.modal-grade-fmt button:hover, .modal-orient button:hover { border-color: var(--grafite-600); }
+.modal-grade-fmt button.ativo, .modal-orient button.ativo {
+  background: var(--agua); border-color: var(--agua); color: var(--grafite-900);
+}
+.modal-resultado { margin: 12px 0 0; font-family: var(--mono); font-size: 12px; color: var(--agua); }
+#modal-titulo-in {
+  width: 100%; box-sizing: border-box; padding: 9px 10px;
+  background: var(--grafite-900); border: 1px solid var(--linha); border-radius: var(--r);
+  color: var(--tinta); font-family: var(--corpo); font-size: 14px;
+}
+.modal-acoes { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; }
+.modal-acoes button {
+  padding: 10px 16px; border-radius: var(--r); cursor: pointer; font-weight: 600;
+  border: 1px solid var(--linha);
+}
+.modal-acoes .destaque { background: var(--tinta); color: var(--grafite-900); border-color: var(--tinta); }
+.modal-acoes .destaque:hover { background: #fff; }
+.modal-acoes .secundario { background: transparent; color: var(--tinta); }
+.modal-acoes .secundario:hover { background: var(--grafite-700); }
+
+.tut-slide { text-align: center; min-height: 210px; }
+.tut-icone { display: flex; justify-content: center; margin: 8px 0 16px; }
+.tut-icone svg {
+  width: 118px; height: 92px; color: var(--agua);
+  stroke: currentColor; stroke-width: 3.4; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.tut-slide h3 { margin: 0 0 8px; font-family: var(--display); font-size: 21px; }
+.tut-slide p { margin: 0 auto; max-width: 360px; color: var(--tinta-fraca); font-size: 14px; line-height: 1.55; }
+.tut-nav { margin-top: 18px; }
+.tut-nav .modal-acoes { margin-top: 12px; }
+.tut-pontos { display: flex; gap: 7px; justify-content: center; }
+.tut-pontos span { width: 8px; height: 8px; border-radius: 50%; background: var(--grafite-600); }
+.tut-pontos span.ativo { background: var(--agua); }
+
 /* ---------------- Impressão / PDF ---------------- */
 
 /* o @page e a largura da folha saem de #estilo-impressao, que acompanha o formato */

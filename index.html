@@ -23,6 +23,7 @@
   </div>
 
   <div class="acoes">
+    <button id="bt-ajuda" type="button" title="Como usar a ferramenta" aria-label="Ajuda">?</button>
     <button id="bt-novo" type="button">Nova folha</button>
     <button id="bt-exemplo" type="button">Carregar exemplo</button>
     <button id="bt-abrir" type="button">Abrir projeto</button>
@@ -81,6 +82,7 @@
             .item { cursor:move; }
             .sel-caixa { fill:none; stroke:#12908d; stroke-width:1.2; stroke-dasharray:6 4; }
             .alca { fill:#fff; stroke:#12908d; stroke-width:1.6; cursor:pointer; }
+            .alca-along { fill:#12908d; stroke:#fff; cursor:ns-resize; }
             .alca-alvo { fill:transparent; stroke:none; pointer-events:all; cursor:pointer; }
           </style>
 
@@ -142,6 +144,50 @@
   </aside>
 
 </main>
+
+<div id="modal-inicio" class="modal" hidden>
+  <div class="modal-cartao" role="dialog" aria-modal="true" aria-labelledby="modal-titulo-h">
+    <div class="modal-etapa" data-etapa="folha">
+      <h2 id="modal-titulo-h">Novo croqui</h2>
+      <p class="modal-sub">Escolha o tamanho da folha para começar. Dá para mudar depois na aba <b>Folha</b>.</p>
+
+      <span class="modal-rot">Formato</span>
+      <div class="modal-grade-fmt" id="modal-formatos">
+        <button type="button" data-base="a4" class="ativo">A4</button>
+        <button type="button" data-base="a3">A3</button>
+        <button type="button" data-base="a2">A2</button>
+        <button type="button" data-base="carta">Carta</button>
+      </div>
+
+      <span class="modal-rot">Orientação</span>
+      <div class="modal-orient" id="modal-orient">
+        <button type="button" data-orient="paisagem" class="ativo">Paisagem</button>
+        <button type="button" data-orient="retrato">Retrato</button>
+      </div>
+
+      <p class="modal-resultado" id="modal-resultado"></p>
+
+      <label class="modal-rot" for="modal-titulo-in">Título do croqui (opcional)</label>
+      <input id="modal-titulo-in" type="text" placeholder="Ex.: Cânion do Macaco" autocomplete="off">
+
+      <div class="modal-acoes">
+        <button id="modal-exemplo" class="secundario" type="button">Ver um exemplo</button>
+        <button id="modal-avancar" class="destaque" type="button">Começar →</button>
+      </div>
+    </div>
+
+    <div class="modal-etapa" data-etapa="tutorial" hidden>
+      <div id="tut-slides"></div>
+      <div class="tut-nav">
+        <div class="tut-pontos" id="tut-pontos" aria-hidden="true"></div>
+        <div class="modal-acoes">
+          <button id="tut-voltar" class="secundario" type="button">← Voltar</button>
+          <button id="tut-proximo" class="destaque" type="button">Próximo →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="js/simbologia.js"></script>
 <script src="js/relevos.js"></script>

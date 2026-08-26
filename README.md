@@ -158,6 +158,16 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Tela de início (novo projeto + tutorial).** Na primeira visita abre um modal
+  para escolher o formato da folha (A4/A3/A2/carta + orientação, com título
+  opcional) e, na sequência, 3–4 passos de como usar. Fica guardado em
+  `localStorage` (`croqui_visto`), então não reaparece a cada refresh. "Nova
+  folha" reabre a escolha de formato; o botão **?** no cabeçalho reabre o
+  tutorial. Ver o bloco "Modal de início" em `js/editor.js` e `#modal-inicio`.
+- **Alongar direto no item.** Símbolos de progressão alongáveis ganharam uma
+  **alça na base** (além das de girar e redimensionar) — arraste para esticar a
+  haste, no eixo do item (respeita a rotação). É o mesmo `comprimento` do
+  inspetor. Ver `data-alca="alongar"` em `desenharSelecao`/`pointerdown`.
 - **Suporte a tablet (toque + gestos + gavetas).** O foco é desktop + tablet
   (celular só para ver/compartilhar, não editar). Pinça = zoom, dois dedos =
   arrastar a folha (`pointers`/`gesto` no `js/editor.js`, `touch-action:none` na

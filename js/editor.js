@@ -19,7 +19,9 @@
     { id: 'a3-paisagem', nome: 'A3 paisagem', l: 420, a: 297 },
     { id: 'a3-retrato',  nome: 'A3 retrato',  l: 297, a: 420 },
     { id: 'a2-paisagem', nome: 'A2 paisagem', l: 594, a: 420 },
+    { id: 'a2-retrato',  nome: 'A2 retrato',  l: 420, a: 594 },
     { id: 'carta-paisagem', nome: 'Carta paisagem', l: 279, a: 216 },
+    { id: 'carta-retrato',  nome: 'Carta retrato',  l: 216, a: 279 },
     { id: 'personalizado', nome: 'Personalizado', l: 297, a: 210 }
   ];
 
@@ -158,13 +160,31 @@
     const dl = Math.hypot(dxs, dys) || 1;
     const escP = { x: c[2].x + (dxs / dl) * 9, y: c[2].y + (dys / dl) * 9 };
 
-    camUI.innerHTML =
+    let html =
       `<polygon class="sel-caixa" points="${c.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"/>` +
       `<line class="sel-caixa" x1="${topo.x}" y1="${topo.y}" x2="${gir.x}" y2="${gir.y}"/>` +
       `<circle class="alca-alvo" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="21"/>` +
       `<circle class="alca-alvo" data-alca="escalar" cx="${escP.x}" cy="${escP.y}" r="13"/>` +
       `<circle class="alca" data-alca="girar" cx="${gir.x}" cy="${gir.y}" r="8"/>` +
       `<rect class="alca" data-alca="escalar" x="${escP.x - 6}" y="${escP.y - 6}" width="12" height="12"/>`;
+
+    // alça de ALONGAMENTO: só nos símbolos de progressão alongáveis. Fica na base
+    // (meio de baixo), projetada para fora, no eixo em que o item estica.
+    const it = itemSel();
+    const s = it && it.tipo === 'simbolo' ? window.SIMBOLO_POR_ID[it.ref] : null;
+    if (s && s.alongavel) {
+      const botC = { x: (c[2].x + c[3].x) / 2, y: (c[2].y + c[3].y) / 2 };
+      const topC = { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 };
+      let bvx = botC.x - topC.x, bvy = botC.y - topC.y;
+      const bl = Math.hypot(bvx, bvy) || 1;
+      const aP = { x: botC.x + (bvx / bl) * 18, y: botC.y + (bvy / bl) * 18 };
+      html +=
+        `<line class="sel-caixa" x1="${botC.x}" y1="${botC.y}" x2="${aP.x}" y2="${aP.y}"/>` +
+        `<circle class="alca-alvo" data-alca="alongar" cx="${aP.x}" cy="${aP.y}" r="15"/>` +
+        `<circle class="alca alca-along" data-alca="alongar" cx="${aP.x}" cy="${aP.y}" r="8"/>`;
+    }
+
+    camUI.innerHTML = html;
   }
 
   function selecionar(id) {
@@ -272,7 +292,7 @@
     // modo de desenho livre: começa a capturar o traço, ignora seleção
     if (modoDesenho) {
       desenhando = { pts: [[p.x, p.y]] };
-      svg.setPointerCapture(evt.pointerId);
+      try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
       return;
     }
 
@@ -283,13 +303,25 @@
       const it = itemSel();
       const c = cantos(noSelecionado());
       const cx = (c[0].x + c[2].x) / 2, cy = (c[0].y + c[2].y) / 2;
-      arraste = {
-        modo: alca.dataset.alca, it, cx, cy,
-        d0: Math.hypot(p.x - cx, p.y - cy),
-        e0: it.esc,
-        a0: Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI - (it.rot || 0)
-      };
-      svg.setPointerCapture(evt.pointerId);
+      if (alca.dataset.alca === 'alongar') {
+        // projeta o arraste no eixo local "para baixo" do item (respeita a rotação);
+        // divide pelo esc porque o comprimento é em unidades da caixa, não da tela
+        const a = (it.rot || 0) * Math.PI / 180;
+        const dirx = -Math.sin(a), diry = Math.cos(a);
+        arraste = {
+          modo: 'alongar', it, dirx, diry, esc0: it.esc || 1,
+          c0: it.comprimento || 0,
+          s0: (p.x - it.x) * dirx + (p.y - it.y) * diry
+        };
+      } else {
+        arraste = {
+          modo: alca.dataset.alca, it, cx, cy,
+          d0: Math.hypot(p.x - cx, p.y - cy),
+          e0: it.esc,
+          a0: Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI - (it.rot || 0)
+        };
+      }
+      try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
       return;
     }
 
@@ -297,7 +329,7 @@
       selecionar(g.dataset.id);
       const it = itemSel();
       arraste = { modo: 'mover', it, dx: p.x - it.x, dy: p.y - it.y };
-      svg.setPointerCapture(evt.pointerId);
+      try { svg.setPointerCapture(evt.pointerId); } catch (_) {}
     } else {
       selecionar(null);
     }
@@ -335,17 +367,23 @@
       let a = Math.atan2(p.y - arraste.cy, p.x - arraste.cx) * 180 / Math.PI - arraste.a0;
       if (evt.shiftKey) a = Math.round(a / 15) * 15;
       it.rot = Math.round(a);
+    } else if (arraste.modo === 'alongar') {
+      const s = (p.x - it.x) * arraste.dirx + (p.y - it.y) * arraste.diry;
+      const comp = arraste.c0 + (s - arraste.s0) / (arraste.esc0 || 1);
+      it.comprimento = Math.round(Math.min(260, Math.max(0, comp)));
     }
-    redesenharItem(it);
+    // alongar muda o traçado (não só o transform), então remonta o miolo
+    if (arraste.modo === 'alongar') redesenharMiolo(it); else redesenharItem(it);
     desenharSelecao();
     sincronizarInspetor(it);
   });
 
   /** Espelha no painel os valores mudados pelo arraste, sem remontá-lo. */
   function sincronizarInspetor(it) {
-    const e = $('#in-esc'), r = $('#in-rot');
+    const e = $('#in-esc'), r = $('#in-rot'), cp = $('#in-comp');
     if (e) { e.value = Math.round(it.esc * 100); e.closest('.campo').querySelector('b').textContent = e.value + '%'; }
     if (r) { r.value = it.rot || 0; r.closest('.campo').querySelector('b').textContent = (it.rot || 0) + '°'; }
+    if (cp) { cp.value = it.comprimento || 0; cp.closest('.campo').querySelector('b').textContent = it.comprimento || 0; }
   }
 
   ['pointerup', 'pointercancel'].forEach(ev =>
@@ -896,6 +934,7 @@
     const calqueAtual = estado.calque;
     estado = vazio(); estado.calque = calqueAtual; sel = null; seq = 1;
     aplicarFormato(); montarPainelFolha(); desenhar(); atualizarInspetor();
+    abrirModal('folha');   // define o formato da folha nova
   });
 
   $('#bt-texto').addEventListener('click', () => {
@@ -1026,6 +1065,95 @@
     if (evt.target.closest('.ficha-simbolo')) fecharGavetas();
   });
 
+  /* ---------------- Modal de início: novo projeto + tutorial ---------------- */
+
+  const DIMS_BASE = { a4: [297, 210], a3: [420, 297], a2: [594, 420], carta: [279, 216] };
+
+  const TUTORIAL = [
+    { t: 'A paleta de símbolos', p: 'À esquerda ficam os símbolos da CBC, por categoria. Clique para inserir no centro da folha, ou arraste até o ponto exato. As categorias abrem e fecham no título.',
+      svg: `<rect x="12" y="14" width="20" height="20" rx="3"/><rect x="40" y="14" width="20" height="20" rx="3"/><rect x="68" y="14" width="20" height="20" rx="3"/><rect x="12" y="44" width="20" height="20" rx="3"/><rect x="40" y="44" width="20" height="20" rx="3"/><rect x="68" y="44" width="20" height="20" rx="3"/>` },
+    { t: 'Editar um item', p: 'Clique num item para selecioná-lo e arraste para mover. As alças giram (em cima), redimensionam (canto) e — nos rapéis e saltos — alongam (embaixo). Setas do teclado ajustam fino; Delete apaga.',
+      svg: `<rect x="30" y="24" width="40" height="34" fill="none" stroke-dasharray="5 3"/><circle cx="50" cy="14" r="5" fill="currentColor" stroke="none"/><rect x="65" y="53" width="10" height="10" fill="currentColor" stroke="none"/><circle cx="50" cy="68" r="5" fill="currentColor" stroke="none"/>` },
+    { t: 'Desenhar o solo', p: 'Precisa da linha do chão ou das paredes? Toque em "Desenhar solo", trace à mão e solte — vira uma linha no estilo do croqui, com rugosidade ajustável no painel.',
+      svg: `<path d="M6 42 q12 -13 24 0 q12 13 24 0 q12 -13 24 0 q6 6 10 2" fill="none"/>` },
+    { t: 'Ficha e exportação', p: 'Preencha a ficha de informações mínimas — a legenda de itens de risco se monta sozinha. Exporte em PNG, PDF ou SVG, ou salve o projeto (.json) para reabrir e continuar depois.',
+      svg: `<path d="M50 10 V50" fill="none"/><path d="M35 37 L50 52 L65 37" fill="none"/><path d="M20 60 H80" fill="none"/>` }
+  ];
+
+  const modal = $('#modal-inicio');
+  let baseSel = 'a4', orientSel = 'paisagem', tutIndex = 0, modalModo = 'completo';
+
+  function dimsEscolhidas() {
+    const [x, y] = DIMS_BASE[baseSel];
+    return orientSel === 'paisagem' ? [Math.max(x, y), Math.min(x, y)] : [Math.min(x, y), Math.max(x, y)];
+  }
+  function atualizarResultado() {
+    const [L, A] = dimsEscolhidas();
+    const nomes = { a4: 'A4', a3: 'A3', a2: 'A2', carta: 'Carta' };
+    $('#modal-resultado').textContent = `${nomes[baseSel]} ${orientSel} · ${L} × ${A} mm`;
+  }
+  function mostrarEtapa(nome) {
+    modal.querySelectorAll('.modal-etapa').forEach(e => { e.hidden = e.dataset.etapa !== nome; });
+  }
+  function renderTutorial() {
+    const s = TUTORIAL[tutIndex];
+    $('#tut-slides').innerHTML =
+      `<div class="tut-slide"><div class="tut-icone"><svg viewBox="0 0 100 78" aria-hidden="true">${s.svg}</svg></div>` +
+      `<h3>${esc(s.t)}</h3><p>${esc(s.p)}</p></div>`;
+    $('#tut-pontos').innerHTML = TUTORIAL.map((_, i) => `<span class="${i === tutIndex ? 'ativo' : ''}"></span>`).join('');
+    $('#tut-proximo').textContent = tutIndex === TUTORIAL.length - 1 ? 'Começar a desenhar' : 'Próximo →';
+    $('#tut-voltar').textContent = tutIndex === 0 && modalModo !== 'tutorial' ? '← Folha' : '← Voltar';
+  }
+  function aplicarFolhaEscolhida() {
+    const [L, A] = dimsEscolhidas();
+    const titulo = $('#modal-titulo-in').value.trim();
+    if (titulo) estado.meta.titulo = titulo;
+    trocarFormato(`${baseSel}-${orientSel}`, L, A, false);
+    montarPainelFolha();
+    desenhar();
+  }
+  function abrirModal(modo) {
+    modalModo = modo || 'completo';
+    baseSel = 'a4'; orientSel = 'paisagem';
+    $$('#modal-formatos button').forEach(x => x.classList.toggle('ativo', x.dataset.base === 'a4'));
+    $$('#modal-orient button').forEach(x => x.classList.toggle('ativo', x.dataset.orient === 'paisagem'));
+    modal.hidden = false;
+    if (modo === 'tutorial') { mostrarEtapa('tutorial'); tutIndex = 0; renderTutorial(); }
+    else { mostrarEtapa('folha'); atualizarResultado(); }
+  }
+  function fecharModal() {
+    modal.hidden = true;
+    try { localStorage.setItem('croqui_visto', '1'); } catch (_) {}
+  }
+
+  $('#modal-formatos').addEventListener('click', e => {
+    const b = e.target.closest('button[data-base]'); if (!b) return;
+    baseSel = b.dataset.base;
+    $$('#modal-formatos button').forEach(x => x.classList.toggle('ativo', x === b));
+    atualizarResultado();
+  });
+  $('#modal-orient').addEventListener('click', e => {
+    const b = e.target.closest('button[data-orient]'); if (!b) return;
+    orientSel = b.dataset.orient;
+    $$('#modal-orient button').forEach(x => x.classList.toggle('ativo', x === b));
+    atualizarResultado();
+  });
+  $('#modal-avancar').addEventListener('click', () => {
+    aplicarFolhaEscolhida();
+    if (modalModo === 'folha') fecharModal();
+    else { mostrarEtapa('tutorial'); tutIndex = 0; renderTutorial(); }
+  });
+  $('#modal-exemplo').addEventListener('click', () => { fecharModal(); carregarExemplo(); });
+  $('#tut-proximo').addEventListener('click', () => {
+    if (tutIndex === TUTORIAL.length - 1) fecharModal();
+    else { tutIndex++; renderTutorial(); }
+  });
+  $('#tut-voltar').addEventListener('click', () => {
+    if (tutIndex === 0) { if (modalModo === 'tutorial') fecharModal(); else mostrarEtapa('folha'); }
+    else { tutIndex--; renderTutorial(); }
+  });
+  $('#bt-ajuda').addEventListener('click', () => abrirModal('tutorial'));
+
   /* ---------------- Início ---------------- */
 
   montarPaleta();
@@ -1036,6 +1164,11 @@
   atualizarInspetor();
   aplicarZoom(0.72);
   window.addEventListener('resize', () => desenharSelecao());
+
+  // primeira visita: abre o modal de novo projeto + tutorial
+  let jaVisto = false;
+  try { jaVisto = localStorage.getItem('croqui_visto') === '1'; } catch (_) {}
+  if (!jaVisto) abrirModal('completo');
 
   // exposto para depuração no console
   window.CROQUI = {

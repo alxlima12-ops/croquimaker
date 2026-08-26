@@ -63,7 +63,12 @@ string num canvas; PDF usa `window.print()` com `#estilo-impressao` (gerado em
   "não funcionar"). `selecionar()` já chama isso na hora certa.
 - `sincronizarInspetor(it)` espelha valores no painel sem remontá-lo (arraste).
 
-Toque/tablet: `pointers` (Map) rastreia dedos; 2 dedos entram em `gesto` (pinça =
+Início: na 1ª visita (`localStorage` `croqui_visto`) abre `#modal-inicio` — etapa
+"folha" (formato/orientação → `trocarFormato`) e etapa "tutorial" (slides do array
+`TUTORIAL`). "Nova folha" reabre a etapa folha; `#bt-ajuda` (?) reabre o tutorial.
+Alongar no item: alça `data-alca="alongar"` na base, arrasto projetado no eixo
+local do item (÷esc, ÷zoom via paraSVG) → `comprimento`; `redesenharMiolo` (muda o
+traçado). Toque/tablet: `pointers` (Map) rastreia dedos; 2 dedos entram em `gesto` (pinça =
 zoom, pan ancorado). `touch-action:none` na `#folha`. Um pointerup perdido vazaria
 o mapa e travaria (toque viraria "2 dedos") — por isso há limpeza também no
 `window`. Em ≤1024px a paleta/painéis viram gavetas (`.coluna.aberta`, botões
