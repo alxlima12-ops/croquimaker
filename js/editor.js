@@ -1207,10 +1207,11 @@
   aplicarZoom(0.72);
   window.addEventListener('resize', () => desenharSelecao());
 
-  // primeira visita: abre o modal de novo projeto + tutorial
+  // A definição da folha abre SEMPRE ao abrir a ferramenta (cada sessão começa
+  // uma folha nova). O tour anotado só aparece na 1ª visita (depois, pelo "?").
   let jaVisto = false;
   try { jaVisto = localStorage.getItem('croqui_visto') === '1'; } catch (_) {}
-  if (!jaVisto) abrirModal('completo');
+  abrirModal(jaVisto ? 'folha' : 'completo');
 
   // exposto para depuração no console
   window.CROQUI = {
