@@ -119,12 +119,23 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .barra-mesa button:hover { background: var(--grafite-700); border-color: var(--grafite-600); }
 
 .barra-mesa button.ativo,
-.barra-mesa button.ativo:hover {
+.barra-mesa button.ativo:hover,
+.topo button.ativo,
+.topo button.ativo:hover {
   background: var(--agua);
   border-color: var(--agua);
   color: var(--grafite-900);
   font-weight: 600;
 }
+
+/* mini-paleta de cores do item */
+.cores { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 4px; }
+.swatch {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--linha); cursor: pointer; padding: 0;
+}
+.swatch:hover { border-color: var(--grafite-600); }
+.swatch.ativo { border-color: var(--tinta); box-shadow: 0 0 0 2px var(--agua); }
 
 .topo button.destaque {
   background: var(--tinta);
@@ -654,6 +665,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
     <input id="arquivo" type="file" accept="application/json,.json" hidden>
     <span class="divisor" aria-hidden="true"></span>
     <button id="bt-json" type="button">Salvar projeto</button>
+    <button id="bt-pb" type="button" aria-pressed="false" title="Alternar entre colorido e preto e branco (vale para a tela e a exportação)">P&B</button>
     <button id="bt-svg" type="button">Exportar SVG</button>
     <button id="bt-pdf" type="button">Exportar PDF</button>
     <button id="bt-png" type="button" class="destaque">Exportar PNG</button>
@@ -697,6 +709,16 @@ button, input, textarea, select { font: inherit; color: inherit; }
             .simbolo { stroke:#000; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .relevo  { stroke:#000; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .fill      { fill:#000; stroke:none; }
+            /* Cor por item: só na camada de itens o traço/preenchimento seguem a cor
+               do item (currentColor). Fora dela (paleta, legenda) continua preto. */
+            #camada-itens { color:#000; }
+            #camada-itens .simbolo, #camada-itens .relevo { stroke:currentColor; }
+            #camada-itens .fill { fill:currentColor; }
+            #camada-itens .texto-item { fill:currentColor; }
+            /* água (poços) em azul translúcido; em P&B volta ao cinza */
+            .agua { fill:#2a7fb8; fill-opacity:.5; }
+            #croqui.pb #camada-itens .item { color:#000 !important; }
+            #croqui.pb .agua { fill:#b8b8b8; fill-opacity:1; }
             /* cópia invisível de traço grosso: folga de clique ao redor da linha */
             .hit, .hit * { fill:none !important; stroke:transparent !important; stroke-width:20 !important; vector-effect:non-scaling-stroke !important; pointer-events:stroke; }
             .tracado-preview { fill:none; stroke:#12908d; stroke-width:1.6; stroke-dasharray:5 4; }
@@ -1009,7 +1031,7 @@ window.SIMBOLOS = [
   },
   {
     id: 'poco', nome: 'Poço', cat: 'hidrologia',
-    svg: `<path d="M10 40 H90 a40 28 0 0 1 -80 0 Z" style="fill:#b8b8b8"/>`
+    svg: `<path d="M10 40 H90 a40 28 0 0 1 -80 0 Z" class="agua"/>`
   },
 
   /* ---------------- Terreno ---------------- */
@@ -1268,7 +1290,7 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
       if (item.ref.startsWith('poco:')) {
         const p = POCOS.find(f => f.id === item.ref.split(':')[1]) || POCOS[0];
         const w = p.w, h = w * 0.34;
-        return `<path d="M0 0 H${w} a${w / 2} ${h} 0 0 1 -${w} 0 Z" style="fill:#b8b8b8"/>`;
+        return `<path d="M0 0 H${w} a${w / 2} ${h} 0 0 1 -${w} 0 Z" class="agua"/>`;
       }
       return '';
     },
@@ -1385,8 +1407,23 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
     return out;
   }
 
+  /** Legenda de cores em uso (água + cores atribuídas), em linha, no rodapé. */
+  function legendaCores(cores, x, y) {
+    if (!cores || !cores.length) return '';
+    let out = `<g class="legenda-cores" transform="translate(${x},${y})">`;
+    out += `<text x="0" y="0" font-size="12" font-weight="700" fill="#000">Cores:</text>`;
+    let cx = 46;
+    cores.forEach(c => {
+      out += `<circle cx="${cx}" cy="-4" r="6" fill="${c.v}"/>`;
+      out += `<text x="${cx + 12}" y="0" font-size="12" fill="#000">${esc(c.nome)}</text>`;
+      cx += 12 + String(c.nome).length * 6.6 + 22;
+    });
+    out += `</g>`;
+    return out;
+  }
+
   /** Camada fixa da folha: título, nota, ficha, créditos e legenda. */
-  function camadaFolha(estado, largura, altura, idsRisco) {
+  function camadaFolha(estado, largura, altura, idsRisco, coresUsadas) {
     const m = estado.meta, f = estado.ficha;
     let out = `<g class="folha" font-family="Arial, Helvetica, sans-serif">`;
 
@@ -1415,11 +1452,12 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
     });
 
     out += legenda(idsRisco, largura - 260, altura - 90);
+    out += legendaCores(coresUsadas, 40, altura - 12);
     out += `</g>`;
     return out;
   }
 
-  window.FICHA = { CAMPOS, MINI, tabela, legenda, camadaFolha };
+  window.FICHA = { CAMPOS, MINI, tabela, legenda, legendaCores, camadaFolha };
 })();
 
 /* ============================================================
@@ -1525,11 +1563,41 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
     if (it.tipo === 'simbolo' && !window.SIMBOLO_POR_ID[it.ref]) return '';
     const flip = it.flip ? -1 : 1;
     const t = `translate(${it.x.toFixed(1)},${it.y.toFixed(1)}) rotate(${(it.rot || 0).toFixed(1)}) scale(${(it.esc * flip).toFixed(3)},${it.esc.toFixed(3)})`;
-    return `<g class="item" data-id="${it.id}" transform="${t}">${mioloItem(it)}</g>`;
+    const cor = it.cor ? ` style="color:${it.cor}"` : '';   // currentColor colore o item
+    return `<g class="item" data-id="${it.id}" transform="${t}"${cor}>${mioloItem(it)}</g>`;
   }
 
   function idsDeRisco() {
     return estado.itens.filter(i => i.tipo === 'simbolo').map(i => i.ref);
+  }
+
+  /* Paleta de cores por item. `v` vazio = padrão (preto). Cada cor tem um
+     significado sugerido, que aparece na legenda de cores da folha. */
+  const CORES = [
+    { v: '', nome: 'Padrão' },
+    { v: '#D6212B', nome: 'Atenção' },
+    { v: '#2a7fb8', nome: 'Água' },
+    { v: '#1f9d55', nome: 'Escape' },
+    { v: '#E08A00', nome: 'Observação' },
+    { v: '#8a5a2b', nome: 'Terreno' }
+  ];
+  const AGUA = '#2a7fb8';
+
+  /** Cores em uso na folha (para a legenda automática): água, se houver poço,
+      mais as cores atribuídas manualmente aos itens. */
+  function coresUsadas() {
+    const usados = [], vistos = new Set();
+    const temAgua = estado.itens.some(i =>
+      i.ref === 'poco' || (i.tipo === 'relevo' && String(i.ref).startsWith('poco:')));
+    if (temAgua) { usados.push({ v: AGUA, nome: 'Água' }); vistos.add(AGUA); }
+    estado.itens.forEach(i => {
+      if (i.cor && !vistos.has(i.cor)) {
+        vistos.add(i.cor);
+        const c = CORES.find(c => c.v === i.cor);
+        usados.push({ v: i.cor, nome: c ? c.nome : 'Cor' });
+      }
+    });
+    return usados;
   }
 
   function desenharCalque() {
@@ -1541,7 +1609,7 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
 
   function desenhar() {
     desenharCalque();
-    camFolha.innerHTML = window.FICHA.camadaFolha(estado, LARGURA, ALTURA, idsDeRisco());
+    camFolha.innerHTML = window.FICHA.camadaFolha(estado, LARGURA, ALTURA, idsDeRisco(), coresUsadas());
     camItens.innerHTML = estado.itens.map(markupItem).join('');
     desenharSelecao();
     atualizarLegendaPainel();
@@ -2023,6 +2091,11 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
       <label class="campo"><span>Rotação <b>${it.rot || 0}°</b></span>
         <input id="in-rot" type="range" min="-180" max="180" value="${it.rot || 0}">
       </label>
+      <div class="campo"><span>Cor</span>
+        <div class="cores" id="in-cores">
+          ${CORES.map(c => `<button type="button" class="swatch${(it.cor || '') === c.v ? ' ativo' : ''}" data-cor="${c.v}" title="${esc(c.nome)}" style="background:${c.v || '#111'}" aria-label="${esc(c.nome)}"></button>`).join('')}
+        </div>
+      </div>
       <div class="botoes">
         <button id="bt-flip">Espelhar</button>
         <button id="bt-frente">Trazer à frente</button>
@@ -2064,6 +2137,12 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
       it.rot = +e.target.value;
       e.target.closest('.campo').querySelector('b').textContent = it.rot + '°';
       redesenharItem(it); desenharSelecao();
+    });
+    $('#in-cores').addEventListener('click', e => {
+      const b = e.target.closest('button[data-cor]'); if (!b) return;
+      it.cor = b.dataset.cor || null;
+      $$('#in-cores .swatch').forEach(x => x.classList.toggle('ativo', x === b));
+      desenhar();   // recolore o item e atualiza a legenda de cores da folha
     });
     $('#bt-flip').addEventListener('click', () => { it.flip = !it.flip; redesenharItem(it); desenharSelecao(); });
     $('#bt-frente').addEventListener('click', () => { mover(it, +1); });
@@ -2327,6 +2406,13 @@ window.SIMBOLOS_RISCO = window.SIMBOLOS.filter(s => s.risco);
   $('#bt-pdf').addEventListener('click', () => {
     // a folha já é A4 paisagem; a folha de estilo de impressão manda o resto sumir
     window.print();
+  });
+
+  // alterna colorido / preto e branco — vale para a tela e para todas as exportações
+  $('#bt-pb').addEventListener('click', () => {
+    const on = svg.classList.toggle('pb');
+    $('#bt-pb').classList.toggle('ativo', on);
+    $('#bt-pb').setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 
   $('#bt-json').addEventListener('click', () => {

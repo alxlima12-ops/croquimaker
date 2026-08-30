@@ -101,11 +101,41 @@
     if (it.tipo === 'simbolo' && !window.SIMBOLO_POR_ID[it.ref]) return '';
     const flip = it.flip ? -1 : 1;
     const t = `translate(${it.x.toFixed(1)},${it.y.toFixed(1)}) rotate(${(it.rot || 0).toFixed(1)}) scale(${(it.esc * flip).toFixed(3)},${it.esc.toFixed(3)})`;
-    return `<g class="item" data-id="${it.id}" transform="${t}">${mioloItem(it)}</g>`;
+    const cor = it.cor ? ` style="color:${it.cor}"` : '';   // currentColor colore o item
+    return `<g class="item" data-id="${it.id}" transform="${t}"${cor}>${mioloItem(it)}</g>`;
   }
 
   function idsDeRisco() {
     return estado.itens.filter(i => i.tipo === 'simbolo').map(i => i.ref);
+  }
+
+  /* Paleta de cores por item. `v` vazio = padrão (preto). Cada cor tem um
+     significado sugerido, que aparece na legenda de cores da folha. */
+  const CORES = [
+    { v: '', nome: 'Padrão' },
+    { v: '#D6212B', nome: 'Atenção' },
+    { v: '#2a7fb8', nome: 'Água' },
+    { v: '#1f9d55', nome: 'Escape' },
+    { v: '#E08A00', nome: 'Observação' },
+    { v: '#8a5a2b', nome: 'Terreno' }
+  ];
+  const AGUA = '#2a7fb8';
+
+  /** Cores em uso na folha (para a legenda automática): água, se houver poço,
+      mais as cores atribuídas manualmente aos itens. */
+  function coresUsadas() {
+    const usados = [], vistos = new Set();
+    const temAgua = estado.itens.some(i =>
+      i.ref === 'poco' || (i.tipo === 'relevo' && String(i.ref).startsWith('poco:')));
+    if (temAgua) { usados.push({ v: AGUA, nome: 'Água' }); vistos.add(AGUA); }
+    estado.itens.forEach(i => {
+      if (i.cor && !vistos.has(i.cor)) {
+        vistos.add(i.cor);
+        const c = CORES.find(c => c.v === i.cor);
+        usados.push({ v: i.cor, nome: c ? c.nome : 'Cor' });
+      }
+    });
+    return usados;
   }
 
   function desenharCalque() {
@@ -117,7 +147,7 @@
 
   function desenhar() {
     desenharCalque();
-    camFolha.innerHTML = window.FICHA.camadaFolha(estado, LARGURA, ALTURA, idsDeRisco());
+    camFolha.innerHTML = window.FICHA.camadaFolha(estado, LARGURA, ALTURA, idsDeRisco(), coresUsadas());
     camItens.innerHTML = estado.itens.map(markupItem).join('');
     desenharSelecao();
     atualizarLegendaPainel();
@@ -599,6 +629,11 @@
       <label class="campo"><span>Rotação <b>${it.rot || 0}°</b></span>
         <input id="in-rot" type="range" min="-180" max="180" value="${it.rot || 0}">
       </label>
+      <div class="campo"><span>Cor</span>
+        <div class="cores" id="in-cores">
+          ${CORES.map(c => `<button type="button" class="swatch${(it.cor || '') === c.v ? ' ativo' : ''}" data-cor="${c.v}" title="${esc(c.nome)}" style="background:${c.v || '#111'}" aria-label="${esc(c.nome)}"></button>`).join('')}
+        </div>
+      </div>
       <div class="botoes">
         <button id="bt-flip">Espelhar</button>
         <button id="bt-frente">Trazer à frente</button>
@@ -640,6 +675,12 @@
       it.rot = +e.target.value;
       e.target.closest('.campo').querySelector('b').textContent = it.rot + '°';
       redesenharItem(it); desenharSelecao();
+    });
+    $('#in-cores').addEventListener('click', e => {
+      const b = e.target.closest('button[data-cor]'); if (!b) return;
+      it.cor = b.dataset.cor || null;
+      $$('#in-cores .swatch').forEach(x => x.classList.toggle('ativo', x === b));
+      desenhar();   // recolore o item e atualiza a legenda de cores da folha
     });
     $('#bt-flip').addEventListener('click', () => { it.flip = !it.flip; redesenharItem(it); desenharSelecao(); });
     $('#bt-frente').addEventListener('click', () => { mover(it, +1); });
@@ -903,6 +944,13 @@
   $('#bt-pdf').addEventListener('click', () => {
     // a folha já é A4 paisagem; a folha de estilo de impressão manda o resto sumir
     window.print();
+  });
+
+  // alterna colorido / preto e branco — vale para a tela e para todas as exportações
+  $('#bt-pb').addEventListener('click', () => {
+    const on = svg.classList.toggle('pb');
+    $('#bt-pb').classList.toggle('ativo', on);
+    $('#bt-pb').setAttribute('aria-pressed', on ? 'true' : 'false');
   });
 
   $('#bt-json').addEventListener('click', () => {

@@ -86,8 +86,23 @@
     return out;
   }
 
+  /** Legenda de cores em uso (água + cores atribuídas), em linha, no rodapé. */
+  function legendaCores(cores, x, y) {
+    if (!cores || !cores.length) return '';
+    let out = `<g class="legenda-cores" transform="translate(${x},${y})">`;
+    out += `<text x="0" y="0" font-size="12" font-weight="700" fill="#000">Cores:</text>`;
+    let cx = 46;
+    cores.forEach(c => {
+      out += `<circle cx="${cx}" cy="-4" r="6" fill="${c.v}"/>`;
+      out += `<text x="${cx + 12}" y="0" font-size="12" fill="#000">${esc(c.nome)}</text>`;
+      cx += 12 + String(c.nome).length * 6.6 + 22;
+    });
+    out += `</g>`;
+    return out;
+  }
+
   /** Camada fixa da folha: título, nota, ficha, créditos e legenda. */
-  function camadaFolha(estado, largura, altura, idsRisco) {
+  function camadaFolha(estado, largura, altura, idsRisco, coresUsadas) {
     const m = estado.meta, f = estado.ficha;
     let out = `<g class="folha" font-family="Arial, Helvetica, sans-serif">`;
 
@@ -116,9 +131,10 @@
     });
 
     out += legenda(idsRisco, largura - 260, altura - 90);
+    out += legendaCores(coresUsadas, 40, altura - 12);
     out += `</g>`;
     return out;
   }
 
-  window.FICHA = { CAMPOS, MINI, tabela, legenda, camadaFolha };
+  window.FICHA = { CAMPOS, MINI, tabela, legenda, legendaCores, camadaFolha };
 })();

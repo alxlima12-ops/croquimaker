@@ -108,12 +108,23 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .barra-mesa button:hover { background: var(--grafite-700); border-color: var(--grafite-600); }
 
 .barra-mesa button.ativo,
-.barra-mesa button.ativo:hover {
+.barra-mesa button.ativo:hover,
+.topo button.ativo,
+.topo button.ativo:hover {
   background: var(--agua);
   border-color: var(--agua);
   color: var(--grafite-900);
   font-weight: 600;
 }
+
+/* mini-paleta de cores do item */
+.cores { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 4px; }
+.swatch {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--linha); cursor: pointer; padding: 0;
+}
+.swatch:hover { border-color: var(--grafite-600); }
+.swatch.ativo { border-color: var(--tinta); box-shadow: 0 0 0 2px var(--agua); }
 
 .topo button.destaque {
   background: var(--tinta);

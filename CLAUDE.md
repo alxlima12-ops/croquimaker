@@ -92,10 +92,15 @@ centrado no canto que cobria itens pequenos e transformava arraste em escala).
   "ficha": { /* 14 campos das informações mínimas */ },
   "folha": { "formato":"a4-paisagem","larguraMm":297,"alturaMm":210 },
   "itens": [
-    { "id","tipo","ref","x","y","esc","rot","flip","label","comprimento","pts","rugosidade","seed" }
+    { "id","tipo","ref","x","y","esc","rot","flip","label","comprimento","pts","rugosidade","cor","seed" }
   ]
 }
 ```
+
+`cor` (opcional): cor do item (hex), aplicada via `currentColor` só em
+`#camada-itens`. Água dos poços é a classe `.agua` (azul); o botão P&B liga
+`#croqui.pb` (preto e branco na tela e no export). Legenda de cores automática
+em `FICHA.legendaCores`.
 
 `comprimento` (padrão 0) é o alongamento anisotrópico; só símbolos `alongavel`
 o usam. `pts` (array de `[x,y]` locais) e `rugosidade` só existem no tipo

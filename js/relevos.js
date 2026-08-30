@@ -165,7 +165,7 @@
       if (item.ref.startsWith('poco:')) {
         const p = POCOS.find(f => f.id === item.ref.split(':')[1]) || POCOS[0];
         const w = p.w, h = w * 0.34;
-        return `<path d="M0 0 H${w} a${w / 2} ${h} 0 0 1 -${w} 0 Z" style="fill:#b8b8b8"/>`;
+        return `<path d="M0 0 H${w} a${w / 2} ${h} 0 0 1 -${w} 0 Z" class="agua"/>`;
       }
       return '';
     },

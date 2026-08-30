@@ -158,6 +158,14 @@ Em ordem do que eu atacaria primeiro:
 Registrado a partir do primeiro uso real. Em ordem sugerida de ataque.
 
 ### Feito nesta rodada
+- **Cor no croqui (fases 1 e 2).** Poços preenchidos em **azul** (água, translúcido).
+  **Cor por item**: mini-paleta no inspetor (Atenção/vermelho, Água, Escape,
+  Observação, Terreno) — o item usa `currentColor`, escopado em `#camada-itens`
+  para não afetar paleta/legenda. **Legenda de cores** automática no rodapé
+  (mostra só as cores em uso). Botão **P&B** alterna colorido ↔ preto e branco na
+  tela e em todas as exportações (`#croqui.pb`). Campo novo `cor` no item. Ver
+  `CORES`/`coresUsadas` em `js/editor.js`, `.agua`/`.pb` no `<style>` do index e
+  `legendaCores` em `js/ficha.js`.
 - **Categorias da paleta fechadas por padrão** (o usuário abre a que quer) e
   **arrastar no canvas não seleciona mais o texto da folha** (`user-select:none`
   na `#folha`). Texto do tour "Painéis" mais completo no desktop.

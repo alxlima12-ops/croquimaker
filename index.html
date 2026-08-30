@@ -30,6 +30,7 @@
     <input id="arquivo" type="file" accept="application/json,.json" hidden>
     <span class="divisor" aria-hidden="true"></span>
     <button id="bt-json" type="button">Salvar projeto</button>
+    <button id="bt-pb" type="button" aria-pressed="false" title="Alternar entre colorido e preto e branco (vale para a tela e a exportação)">P&B</button>
     <button id="bt-svg" type="button">Exportar SVG</button>
     <button id="bt-pdf" type="button">Exportar PDF</button>
     <button id="bt-png" type="button" class="destaque">Exportar PNG</button>
@@ -73,6 +74,16 @@
             .simbolo { stroke:#000; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .relevo  { stroke:#000; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
             .fill      { fill:#000; stroke:none; }
+            /* Cor por item: só na camada de itens o traço/preenchimento seguem a cor
+               do item (currentColor). Fora dela (paleta, legenda) continua preto. */
+            #camada-itens { color:#000; }
+            #camada-itens .simbolo, #camada-itens .relevo { stroke:currentColor; }
+            #camada-itens .fill { fill:currentColor; }
+            #camada-itens .texto-item { fill:currentColor; }
+            /* água (poços) em azul translúcido; em P&B volta ao cinza */
+            .agua { fill:#2a7fb8; fill-opacity:.5; }
+            #croqui.pb #camada-itens .item { color:#000 !important; }
+            #croqui.pb .agua { fill:#b8b8b8; fill-opacity:1; }
             /* cópia invisível de traço grosso: folga de clique ao redor da linha */
             .hit, .hit * { fill:none !important; stroke:transparent !important; stroke-width:20 !important; vector-effect:non-scaling-stroke !important; pointer-events:stroke; }
             .tracado-preview { fill:none; stroke:#12908d; stroke-width:1.6; stroke-dasharray:5 4; }

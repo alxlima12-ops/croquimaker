@@ -188,7 +188,7 @@ window.SIMBOLOS = [
   },
   {
     id: 'poco', nome: 'Poço', cat: 'hidrologia',
-    svg: `<path d="M10 40 H90 a40 28 0 0 1 -80 0 Z" style="fill:#b8b8b8"/>`
+    svg: `<path d="M10 40 H90 a40 28 0 0 1 -80 0 Z" class="agua"/>`
   },
 
   /* ---------------- Terreno ---------------- */
